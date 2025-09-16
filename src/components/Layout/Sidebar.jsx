@@ -49,7 +49,7 @@ export default function Sidebar({ userRole = 'Government Official' }) {
 
       {/* Sidebar */}
       <div className={clsx(
-        'fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0',
+        'fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         {/* Logo and Header */}
