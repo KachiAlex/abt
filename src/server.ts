@@ -124,34 +124,40 @@ const startServer = async () => {
     await prisma.$connect();
     console.log('✅ Database connected successfully');
     
-    // Start server
-    httpServer.listen(config.port, () => {
-      console.log(`🚀 ABT API Server running on port ${config.port}`);
-      console.log(`📱 Environment: ${config.nodeEnv}`);
-      console.log(`🌐 CORS Origin: ${config.corsOrigin}`);
-    });
+    // Only start server if not in Firebase Functions environment
+    if (!process.env.FUNCTIONS_EMULATOR && !process.env.K_SERVICE) {
+      httpServer.listen(config.port, () => {
+        console.log(`🚀 ABT API Server running on port ${config.port}`);
+        console.log(`📱 Environment: ${config.nodeEnv}`);
+        console.log(`🌐 CORS Origin: ${config.corsOrigin}`);
+      });
+    }
   } catch (error) {
     console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    if (!process.env.FUNCTIONS_EMULATOR && !process.env.K_SERVICE) {
+      process.exit(1);
+    }
   }
 };
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await prisma.$disconnect();
-  httpServer.close(() => {
-    console.log('Process terminated');
+// Graceful shutdown (only for standalone server)
+if (!process.env.FUNCTIONS_EMULATOR && !process.env.K_SERVICE) {
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    await prisma.$disconnect();
+    httpServer.close(() => {
+      console.log('Process terminated');
+    });
   });
-});
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await prisma.$disconnect();
-  httpServer.close(() => {
-    console.log('Process terminated');
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully');
+    await prisma.$disconnect();
+    httpServer.close(() => {
+      console.log('Process terminated');
+    });
   });
-});
+}
 
 startServer();
 
