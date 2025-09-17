@@ -15,6 +15,7 @@ import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import MapView from './pages/MapView';
 import Settings from './pages/Settings';
+import ProgressMeasurement from './pages/ProgressMeasurement';
 import PublicPortal from './pages/PublicPortal';
 import './App.css';
 
@@ -112,6 +113,11 @@ function AppContent() {
                 <Settings />
               </ProtectedRoute>
             } />
+            <Route path="/progress" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER']}>
+                <ProgressMeasurement />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
       </div>
@@ -123,7 +129,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+      <AppContent />
       </AuthProvider>
     </Router>
   );
