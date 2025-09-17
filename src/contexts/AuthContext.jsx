@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
         const authData = localStorage.getItem('abt_auth');
         if (authData) {
           const parsed = JSON.parse(authData);
+          console.log('Loading cached auth data:', parsed); // Debug log
           setUser(parsed.user);
           setToken(parsed.token);
         }
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signIn = (authData) => {
+    console.log('Signing in with data:', authData); // Debug log
     setUser(authData.user);
     setToken(authData.token);
     localStorage.setItem('abt_auth', JSON.stringify(authData));
@@ -50,6 +52,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     const updatedUser = { ...user, ...userData };
+    console.log('Updating user from:', user, 'to:', updatedUser); // Debug log
     setUser(updatedUser);
     const authData = { user: updatedUser, token };
     localStorage.setItem('abt_auth', JSON.stringify(authData));

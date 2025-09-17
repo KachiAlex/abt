@@ -44,6 +44,7 @@ export default function Sidebar({ userRole = 'Government Official' }) {
   };
 
   const getUserDisplayName = () => {
+    console.log('Sidebar user data:', user); // Debug log
     if (!user) return 'User';
     return `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
   };
