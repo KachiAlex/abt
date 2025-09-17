@@ -16,7 +16,7 @@ import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 
 const navigationItems = [
-  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Contractors', href: '/contractors', icon: Users },
   { name: 'M&E Reports', href: '/reports', icon: FileText },

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
+import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
@@ -19,7 +20,7 @@ function AppContent() {
   const location = useLocation();
   
   const getPageTitle = () => {
-    if (location.pathname === '/') return 'Dashboard';
+    if (location.pathname === '/dashboard') return 'Dashboard';
     if (location.pathname === '/projects') return 'Projects';
     if (location.pathname.startsWith('/projects/')) return 'Project Details';
     if (location.pathname === '/contractors') return 'Contractors';
@@ -33,12 +34,13 @@ function AppContent() {
     return 'Dashboard';
   };
 
-  // Check if current route is public portal
-  const isPublicRoute = location.pathname === '/public';
+  // Check if current route is home, public portal, or other standalone pages
+  const isStandaloneRoute = location.pathname === '/' || location.pathname === '/public';
 
-  if (isPublicRoute) {
+  if (isStandaloneRoute) {
     return (
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/public" element={<PublicPortal />} />
       </Routes>
     );
@@ -53,7 +55,7 @@ function AppContent() {
         
         <main className="p-6">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/new" element={<ProjectNew />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
