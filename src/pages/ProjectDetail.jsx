@@ -420,15 +420,221 @@ export default function ProjectDetail() {
           </div>
         )}
 
-        {(activeTab === 'documents' || activeTab === 'team') && (
-          <div className="card text-center py-12">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {activeTab === 'documents' ? 'Documents' : 'Team'} Coming Soon
-            </h3>
-            <p className="text-gray-600">
-              This section is under development and will be available soon.
-            </p>
+        {activeTab === 'documents' && (
+          <div className="space-y-6">
+            {/* Documents Upload */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Project Documents</h3>
+                <button className="btn-primary flex items-center space-x-2">
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Document</span>
+                </button>
+              </div>
+
+              {/* Document Categories */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <FileText className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <h4 className="font-medium text-gray-900">Contracts</h4>
+                  <p className="text-sm text-gray-600">5 files</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <Camera className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <h4 className="font-medium text-gray-900">Progress Photos</h4>
+                  <p className="text-sm text-gray-600">142 files</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <FileText className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                  <h4 className="font-medium text-gray-900">Reports</h4>
+                  <p className="text-sm text-gray-600">8 files</p>
+                </div>
+              </div>
+
+              {/* Document List */}
+              <div className="space-y-4">
+                {[
+                  { name: 'Project Contract Agreement.pdf', type: 'Contract', size: '2.4 MB', date: '2023-01-15', status: 'Approved' },
+                  { name: 'Technical Specifications.docx', type: 'Technical', size: '1.8 MB', date: '2023-01-20', status: 'Under Review' },
+                  { name: 'Environmental Impact Assessment.pdf', type: 'Environmental', size: '5.2 MB', date: '2023-02-01', status: 'Approved' },
+                  { name: 'Progress Report - January 2024.pdf', type: 'Report', size: '3.1 MB', date: '2024-01-31', status: 'Final' },
+                  { name: 'Site Photos - Week 12.zip', type: 'Photos', size: '45.8 MB', date: '2024-01-28', status: 'Uploaded' }
+                ].map((doc, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">{doc.name}</h4>
+                        <p className="text-sm text-gray-500">{doc.type} • {doc.size} • {new Date(doc.date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`status-badge ${
+                        doc.status === 'Approved' || doc.status === 'Final' ? 'status-completed' :
+                        doc.status === 'Under Review' ? 'status-in-progress' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {doc.status}
+                      </span>
+                      <div className="flex space-x-1">
+                        <button className="text-gray-400 hover:text-gray-600">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button className="text-gray-400 hover:text-gray-600">
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'team' && (
+          <div className="space-y-6">
+            {/* Team Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="card text-center">
+                <Users className="h-8 w-8 text-blue-600 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900">12</h3>
+                <p className="text-sm text-gray-600">Team Members</p>
+              </div>
+              <div className="card text-center">
+                <Building className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900">3</h3>
+                <p className="text-sm text-gray-600">Departments</p>
+              </div>
+              <div className="card text-center">
+                <User className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900">1</h3>
+                <p className="text-sm text-gray-600">Project Manager</p>
+              </div>
+            </div>
+
+            {/* Project Leadership */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Project Leadership</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold">AJ</span>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">Adebayo Johnson</h4>
+                    <p className="text-sm text-gray-600">Project Manager</p>
+                    <p className="text-sm text-gray-500">Lagos Infrastructure Ltd</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-600 font-semibold">SO</span>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">Sarah Okafor</h4>
+                    <p className="text-sm text-gray-600">Site Engineer</p>
+                    <p className="text-sm text-gray-500">Lagos Infrastructure Ltd</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Government Team */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Government Oversight</h3>
+              <div className="space-y-4">
+                {[
+                  { name: 'John Doe', role: 'Project Supervisor', department: 'Ministry of Works', avatar: 'JD' },
+                  { name: 'Jane Smith', role: 'M&E Officer', department: 'Project Monitoring Unit', avatar: 'JS' },
+                  { name: 'Mike Wilson', role: 'Budget Analyst', department: 'Ministry of Finance', avatar: 'MW' }
+                ].map((member, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-abia-100 rounded-full flex items-center justify-center">
+                        <span className="text-abia-600 font-semibold text-sm">{member.avatar}</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{member.name}</h4>
+                        <p className="text-sm text-gray-600">{member.role}</p>
+                        <p className="text-sm text-gray-500">{member.department}</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <Mail className="h-4 w-4" />
+                      </button>
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <Phone className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Contractor Team */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Contractor Team</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { name: 'Michael Adebayo', role: 'Site Supervisor', avatar: 'MA' },
+                  { name: 'Grace Okonkwo', role: 'Quality Control', avatar: 'GO' },
+                  { name: 'David Eze', role: 'Safety Officer', avatar: 'DE' },
+                  { name: 'Ruth Okoro', role: 'Materials Manager', avatar: 'RO' },
+                  { name: 'Peter Nwankwo', role: 'Equipment Operator', avatar: 'PN' },
+                  { name: 'Mary Uche', role: 'Administrative Assistant', avatar: 'MU' }
+                ].map((member, index) => (
+                  <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600 font-semibold text-xs">{member.avatar}</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-gray-900">{member.name}</h4>
+                      <p className="text-xs text-gray-600">{member.role}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Communication */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Team Communication</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Recent Messages</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-700">Weekly progress meeting scheduled for Friday 2PM</p>
+                      <p className="text-xs text-gray-500 mt-1">Adebayo Johnson • 2 hours ago</p>
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <p className="text-sm text-gray-700">Materials delivery confirmed for Monday morning</p>
+                      <p className="text-xs text-gray-500 mt-1">Ruth Okoro • 1 day ago</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Quick Actions</h4>
+                  <div className="space-y-2">
+                    <button className="w-full btn-secondary text-sm">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Send Team Message
+                    </button>
+                    <button className="w-full btn-secondary text-sm">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Meeting
+                    </button>
+                    <button className="w-full btn-secondary text-sm">
+                      <Users className="h-4 w-4 mr-2" />
+                      Add Team Member
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

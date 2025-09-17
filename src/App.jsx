@@ -4,9 +4,14 @@ import Header from './components/Layout/Header';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
+import ProjectNew from './pages/ProjectNew';
 import Contractors from './pages/Contractors';
 import ContractorDashboard from './pages/ContractorDashboard';
 import MEDashboard from './pages/MEDashboard';
+import Reports from './pages/Reports';
+import Analytics from './pages/Analytics';
+import MapView from './pages/MapView';
+import Settings from './pages/Settings';
 import PublicPortal from './pages/PublicPortal';
 import './App.css';
 
@@ -50,14 +55,15 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/new" element={<ProjectNew />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/contractors" element={<Contractors />} />
             <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
             <Route path="/me/dashboard" element={<MEDashboard />} />
-            <Route path="/reports" element={<div className="card"><h2 className="text-xl font-bold">Reports Page Coming Soon</h2></div>} />
-            <Route path="/analytics" element={<div className="card"><h2 className="text-xl font-bold">Analytics Page Coming Soon</h2></div>} />
-            <Route path="/map" element={<div className="card"><h2 className="text-xl font-bold">Map View Coming Soon</h2></div>} />
-            <Route path="/settings" element={<div className="card"><h2 className="text-xl font-bold">Settings Page Coming Soon</h2></div>} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/map" element={<MapView />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>
