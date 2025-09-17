@@ -11,261 +11,576 @@ import {
   AlertTriangle,
   Plus,
   Eye,
-  MessageSquare
+  MessageSquare,
+  TrendingUp,
+  Users,
+  Award,
+  Bell,
+  Download,
+  Edit,
+  Send,
+  Filter,
+  Search,
+  Star,
+  Target,
+  BarChart3
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 
-// Mock data for contractor's projects
+// Enhanced mock data for contractor's projects
 const contractorProjects = [
   {
     id: 'PRJ-2023-001',
-    name: 'Lekki-Epe Expressway Expansion',
-    lga: 'Eti-Osa',
+    name: 'Aba North Road Network Expansion',
+    lga: 'Aba North',
     budget: '₦1.2B',
     progress: 65,
     status: 'In Progress',
     dueDate: '2024-06-30',
+    startDate: '2023-01-15',
     nextMilestone: 'Phase 2: Road Expansion (Km 10-20)',
     milestoneProgress: 65,
     lastUpdate: '2 days ago',
     pendingApprovals: 1,
-    totalMilestones: 3,
-    completedMilestones: 1
+    totalMilestones: 5,
+    completedMilestones: 3,
+    priority: 'High',
+    category: 'Transportation',
+    manager: 'Adebayo Johnson',
+    weatherDelay: 0,
+    qualityScore: 4.5,
+    safetyIncidents: 0
   },
   {
     id: 'PRJ-2023-005',
-    name: 'Ikorodu Road Rehabilitation',
-    lga: 'Ikorodu',
+    name: 'Umuahia Healthcare Complex',
+    lga: 'Umuahia North',
     budget: '₦850M',
     progress: 40,
     status: 'In Progress',
     dueDate: '2024-08-15',
-    nextMilestone: 'Phase 1: Surface Preparation',
+    startDate: '2023-03-01',
+    nextMilestone: 'Phase 1: Foundation & Structure',
     milestoneProgress: 40,
     lastUpdate: '1 week ago',
     pendingApprovals: 0,
     totalMilestones: 4,
-    completedMilestones: 0
+    completedMilestones: 1,
+    priority: 'Medium',
+    category: 'Healthcare',
+    manager: 'Sarah Okafor',
+    weatherDelay: 3,
+    qualityScore: 4.2,
+    safetyIncidents: 1
+  },
+  {
+    id: 'PRJ-2023-008',
+    name: 'Aba South Water Treatment Plant',
+    lga: 'Aba South',
+    budget: '₦650M',
+    progress: 85,
+    status: 'Near Completion',
+    dueDate: '2024-03-30',
+    startDate: '2022-10-01',
+    nextMilestone: 'Final Testing & Commissioning',
+    milestoneProgress: 85,
+    lastUpdate: 'Yesterday',
+    pendingApprovals: 2,
+    totalMilestones: 6,
+    completedMilestones: 5,
+    priority: 'High',
+    category: 'Water & Sanitation',
+    manager: 'Michael Eze',
+    weatherDelay: 0,
+    qualityScore: 4.8,
+    safetyIncidents: 0
   }
 ];
 
 const recentActivities = [
   {
     id: 1,
-    type: 'milestone',
-    title: 'Phase 2 Milestone Submitted',
-    project: 'Lekki-Epe Expressway Expansion',
-    description: 'Submitted milestone completion with 15 progress photos',
+    type: 'milestone_completed',
+    title: 'Phase 3 Milestone Completed',
+    project: 'Aba North Road Network Expansion',
+    description: 'Successfully completed road surfacing for 5km stretch',
     date: '2024-01-10',
-    status: 'Pending Approval'
+    status: 'Approved',
+    icon: CheckCircle,
+    color: 'text-green-600 bg-green-50'
   },
   {
     id: 2,
-    type: 'update',
-    title: 'Progress Update Uploaded',
-    project: 'Ikorodu Road Rehabilitation',
-    description: 'Weekly progress report with site photos uploaded',
+    type: 'update_submitted',
+    title: 'Weekly Progress Report Submitted',
+    project: 'Umuahia Healthcare Complex',
+    description: 'Foundation work progress with 12 photos uploaded',
     date: '2024-01-08',
-    status: 'Approved'
+    status: 'Under Review',
+    icon: FileText,
+    color: 'text-blue-600 bg-blue-50'
   },
   {
     id: 3,
-    type: 'issue',
-    title: 'Weather Delay Reported',
-    project: 'Lekki-Epe Expressway Expansion',
-    description: 'Reported 3-day delay due to heavy rainfall',
+    type: 'issue_reported',
+    title: 'Material Delay Reported',
+    project: 'Aba South Water Treatment Plant',
+    description: 'Specialized equipment delivery delayed by 5 days',
     date: '2024-01-05',
-    status: 'Acknowledged'
+    status: 'Acknowledged',
+    icon: AlertTriangle,
+    color: 'text-yellow-600 bg-yellow-50'
+  },
+  {
+    id: 4,
+    type: 'approval_received',
+    title: 'Budget Variation Approved',
+    project: 'Umuahia Healthcare Complex',
+    description: 'Additional ₦50M approved for enhanced specifications',
+    date: '2024-01-03',
+    status: 'Approved',
+    icon: DollarSign,
+    color: 'text-green-600 bg-green-50'
+  }
+];
+
+const notifications = [
+  {
+    id: 1,
+    title: 'Milestone Review Due',
+    message: 'Phase 2 milestone for Aba North Road project needs review submission',
+    time: '2 hours ago',
+    type: 'deadline',
+    urgent: true
+  },
+  {
+    id: 2,
+    title: 'Payment Released',
+    message: '₦180M payment has been released for completed milestones',
+    time: '1 day ago',
+    type: 'payment',
+    urgent: false
+  },
+  {
+    id: 3,
+    title: 'Site Inspection Scheduled',
+    message: 'M&E team will visit Umuahia Healthcare site on Friday 2PM',
+    time: '2 days ago',
+    type: 'inspection',
+    urgent: false
+  }
+];
+
+const upcomingDeadlines = [
+  {
+    project: 'Aba North Road Network',
+    milestone: 'Phase 2 Completion',
+    dueDate: '2024-02-15',
+    daysLeft: 15,
+    status: 'on-track'
+  },
+  {
+    project: 'Aba South Water Treatment',
+    milestone: 'Final Testing',
+    dueDate: '2024-02-28',
+    daysLeft: 28,
+    status: 'ahead'
+  },
+  {
+    project: 'Umuahia Healthcare',
+    milestone: 'Foundation Review',
+    dueDate: '2024-02-05',
+    daysLeft: 5,
+    status: 'at-risk'
   }
 ];
 
 const statusStyles = {
   'Completed': 'status-completed',
   'In Progress': 'status-in-progress',
+  'Near Completion': 'bg-blue-100 text-blue-800',
   'Delayed': 'status-delayed',
   'Not Started': 'status-not-started'
 };
 
-const activityIcons = {
-  milestone: CheckCircle,
-  update: FileText,
-  issue: AlertTriangle
-};
-
-const activityColors = {
-  milestone: 'text-green-600 bg-green-50',
-  update: 'text-blue-600 bg-blue-50',
-  issue: 'text-red-600 bg-red-50'
-};
-
 export default function ContractorDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const totalBudget = contractorProjects.reduce((sum, project) => {
+    return sum + parseFloat(project.budget.replace('₦', '').replace('B', '000000000').replace('M', '000000'));
+  }, 0);
+
+  const avgProgress = Math.round(contractorProjects.reduce((sum, project) => sum + project.progress, 0) / contractorProjects.length);
+  const totalMilestones = contractorProjects.reduce((sum, project) => sum + project.totalMilestones, 0);
+  const completedMilestones = contractorProjects.reduce((sum, project) => sum + project.completedMilestones, 0);
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
+      {/* Enhanced Header */}
       <div className="card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, Lagos Infrastructure Ltd</h1>
-            <p className="text-gray-600 mt-1">Contractor Dashboard</p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          <div className="mb-4 lg:mb-0">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-lg">KI</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Kreatix Infrastructure Ltd</h1>
+                <p className="text-gray-600">Contractor Dashboard</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <div className="flex items-center space-x-1">
+                <Star className="h-4 w-4 text-yellow-500" />
+                <span>4.5 Rating</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Award className="h-4 w-4 text-green-500" />
+                <span>Certified Contractor</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Users className="h-4 w-4 text-blue-500" />
+                <span>15+ Years Experience</span>
+              </div>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            </button>
             <div className="text-right">
+              <p className="text-sm text-gray-600">Contract Value</p>
+              <p className="text-2xl font-bold text-green-600">₦{(totalBudget / 1000000000).toFixed(1)}B</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications Dropdown */}
+        {showNotifications && (
+          <div className="absolute right-4 top-16 w-80 bg-white rounded-lg shadow-lg border z-50 max-h-96 overflow-y-auto">
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">Notifications</h3>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {notifications.map((notification) => (
+                <div key={notification.id} className={`p-4 hover:bg-gray-50 ${notification.urgent ? 'bg-red-50' : ''}`}>
+                  <div className="flex items-start space-x-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${
+                      notification.urgent ? 'bg-red-500' : 'bg-blue-500'
+                    }`} />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-gray-900">{notification.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Enhanced Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-abia-600">{contractorProjects.length}</p>
+              <p className="text-2xl font-bold text-blue-600">{contractorProjects.length}</p>
+              <div className="flex items-center text-sm text-green-600 mt-1">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>All on track</span>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Pending Approvals</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {contractorProjects.reduce((sum, p) => sum + p.pendingApprovals, 0)}
-              </p>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText className="h-6 w-6 text-blue-600" />
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Completion Rate</p>
-              <p className="text-2xl font-bold text-green-600">78%</p>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Avg Progress</p>
+              <p className="text-2xl font-bold text-green-600">{avgProgress}%</p>
+              <div className="flex items-center text-sm text-green-600 mt-1">
+                <Target className="h-4 w-4 mr-1" />
+                <span>Above target</span>
+              </div>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <BarChart3 className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Milestones</p>
+              <p className="text-2xl font-bold text-purple-600">{completedMilestones}/{totalMilestones}</p>
+              <div className="flex items-center text-sm text-purple-600 mt-1">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                <span>{Math.round((completedMilestones/totalMilestones)*100)}% complete</span>
+              </div>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Award className="h-6 w-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Quality Score</p>
+              <p className="text-2xl font-bold text-yellow-600">4.5/5</p>
+              <div className="flex items-center text-sm text-yellow-600 mt-1">
+                <Star className="h-4 w-4 mr-1" />
+                <span>Excellent rating</span>
+              </div>
+            </div>
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Star className="h-6 w-6 text-yellow-600" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <button 
-          onClick={() => setShowUploadModal(true)}
-          className="btn-primary flex items-center justify-center space-x-2 py-4"
-        >
-          <Upload className="h-5 w-5" />
-          <span>Submit Update</span>
-        </button>
-        <button className="btn-secondary flex items-center justify-center space-x-2 py-4">
-          <Camera className="h-5 w-5" />
-          <span>Upload Photos</span>
-        </button>
-        <button className="btn-secondary flex items-center justify-center space-x-2 py-4">
-          <FileText className="h-5 w-5" />
-          <span>Submit Report</span>
-        </button>
-        <button className="btn-secondary flex items-center justify-center space-x-2 py-4">
-          <MessageSquare className="h-5 w-5" />
-          <span>Contact M&E</span>
-        </button>
+      {/* Enhanced Quick Actions */}
+      <div className="card">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="btn-primary flex flex-col items-center space-y-2 py-4"
+          >
+            <Upload className="h-6 w-6" />
+            <span className="text-sm">Submit Update</span>
+          </button>
+          <button className="btn-secondary flex flex-col items-center space-y-2 py-4">
+            <Camera className="h-6 w-6" />
+            <span className="text-sm">Upload Photos</span>
+          </button>
+          <button className="btn-secondary flex flex-col items-center space-y-2 py-4">
+            <FileText className="h-6 w-6" />
+            <span className="text-sm">Submit Report</span>
+          </button>
+          <button className="btn-secondary flex flex-col items-center space-y-2 py-4">
+            <MessageSquare className="h-6 w-6" />
+            <span className="text-sm">Contact M&E</span>
+          </button>
+          <button className="btn-secondary flex flex-col items-center space-y-2 py-4">
+            <Download className="h-6 w-6" />
+            <span className="text-sm">Download Forms</span>
+          </button>
+          <button className="btn-secondary flex flex-col items-center space-y-2 py-4">
+            <Calendar className="h-6 w-6" />
+            <span className="text-sm">Schedule Meeting</span>
+          </button>
+        </div>
       </div>
 
-      {/* Active Projects */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <h2 className="text-lg font-semibold text-gray-900">Active Projects</h2>
-          
-          {contractorProjects.map((project) => (
-            <div key={project.id} className="card">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                  <p className="text-sm text-gray-500 font-mono">{project.id}</p>
-                </div>
-                <span className={clsx('status-badge', statusStyles[project.status])}>
-                  {project.status}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                <div className="flex items-center text-gray-600">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  {project.lga}
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  {project.budget}
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Due: {new Date(project.dueDate).toLocaleDateString()}
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Updated: {project.lastUpdate}
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-gray-600">Overall Progress</span>
-                  <span className="font-semibold">{project.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-abia-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${project.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-900">Next Milestone</span>
-                  <span className="text-gray-600">{project.milestoneProgress}%</span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{project.nextMilestone}</p>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="bg-yellow-500 h-1.5 rounded-full"
-                    style={{ width: `${project.milestoneProgress}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span>{project.completedMilestones}/{project.totalMilestones} milestones</span>
-                  {project.pendingApprovals > 0 && (
-                    <span className="text-yellow-600 font-medium">
-                      {project.pendingApprovals} pending approval
-                    </span>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <Link
-                    to={`/contractor/projects/${project.id}`}
-                    className="text-abia-600 hover:text-abia-700 text-sm font-medium flex items-center"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Tab Navigation */}
+      <div className="card">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'overview', name: 'Project Overview' },
+              { id: 'milestones', name: 'Milestones' },
+              { id: 'activity', name: 'Recent Activity' },
+              { id: 'deadlines', name: 'Deadlines' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={clsx(
+                  'py-2 px-1 border-b-2 font-medium text-sm',
+                  activeTab === tab.id
+                    ? 'border-abia-500 text-abia-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                )}
+              >
+                {tab.name}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Recent Activity */}
-        <div className="space-y-6">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-          
-          <div className="card">
+        <div className="p-6">
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {contractorProjects.map((project) => (
+                <div key={project.id} className="border border-gray-200 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
+                        <span className={clsx('status-badge', statusStyles[project.status])}>
+                          {project.status}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          project.priority === 'High' ? 'bg-red-100 text-red-800' :
+                          project.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {project.priority} Priority
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-3">{project.id} • {project.category} • {project.lga}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className="text-abia-600 hover:text-abia-700 p-2 rounded-lg hover:bg-abia-50"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                      <button className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-50">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="text-sm">
+                      <span className="text-gray-600">Budget:</span>
+                      <p className="font-semibold text-gray-900">{project.budget}</p>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-gray-600">Manager:</span>
+                      <p className="font-semibold text-gray-900">{project.manager}</p>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-gray-600">Due Date:</span>
+                      <p className="font-semibold text-gray-900">{new Date(project.dueDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-gray-600">Quality Score:</span>
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <span className="font-semibold text-gray-900">{project.qualityScore}/5</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-gray-600">Overall Progress</span>
+                      <span className="font-semibold">{project.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-abia-600 h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">Next Milestone</h4>
+                      <span className="text-sm text-gray-600">{project.milestoneProgress}%</span>
+                    </div>
+                    <p className="text-sm text-gray-700 mb-3">{project.nextMilestone}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-yellow-500 h-2 rounded-full"
+                        style={{ width: `${project.milestoneProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Milestones Tab */}
+          {activeTab === 'milestones' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Milestone Progress</h3>
+                <button className="btn-primary flex items-center space-x-2">
+                  <Plus className="h-4 w-4" />
+                  <span>Submit Milestone</span>
+                </button>
+              </div>
+
+              {contractorProjects.map((project) => (
+                <div key={project.id} className="border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-900 mb-4">{project.name}</h4>
+                  <div className="space-y-4">
+                    {Array.from({ length: project.totalMilestones }, (_, i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          i < project.completedMilestones ? 'bg-green-500 text-white' :
+                          i === project.completedMilestones ? 'bg-yellow-500 text-white' :
+                          'bg-gray-200 text-gray-500'
+                        }`}>
+                          {i < project.completedMilestones ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <span>{i + 1}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {i === 0 ? 'Project Initiation' :
+                             i === 1 ? 'Foundation & Preparation' :
+                             i === 2 ? 'Main Construction Phase' :
+                             i === 3 ? 'Quality Testing' :
+                             'Final Completion'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {i < project.completedMilestones ? 'Completed' :
+                             i === project.completedMilestones ? 'In Progress' :
+                             'Pending'}
+                          </p>
+                        </div>
+                        {i < project.completedMilestones && (
+                          <span className="text-green-600 text-sm">✓ Approved</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Activity Tab */}
+          {activeTab === 'activity' && (
             <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
               {recentActivities.map((activity) => {
-                const Icon = activityIcons[activity.type];
+                const Icon = activity.icon;
                 return (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className={clsx('p-2 rounded-lg flex-shrink-0', activityColors[activity.type])}>
-                      <Icon className="h-4 w-4" />
+                  <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div className={`p-2 rounded-lg ${activity.color}`}>
+                      <Icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-gray-900">{activity.title}</h4>
-                        <span className="text-xs text-gray-500">
-                          {new Date(activity.date).toLocaleDateString()}
-                        </span>
+                        <h4 className="font-medium text-gray-900">{activity.title}</h4>
+                        <span className="text-sm text-gray-500">{activity.date}</span>
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">{activity.project}</p>
-                      <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
+                      <p className="text-sm text-gray-600 mt-1">{activity.project}</p>
+                      <p className="text-sm text-gray-700 mt-1">{activity.description}</p>
                       <div className="mt-2">
                         <span className={clsx(
                           'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                           activity.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                          activity.status === 'Pending Approval' ? 'bg-yellow-100 text-yellow-800' :
+                          activity.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-blue-100 text-blue-800'
                         )}>
                           {activity.status}
@@ -276,103 +591,132 @@ export default function ContractorDashboard() {
                 );
               })}
             </div>
-            
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <Link 
-                to="/contractor/activity" 
-                className="text-abia-600 hover:text-abia-700 text-sm font-medium"
-              >
-                View All Activity →
-              </Link>
-            </div>
-          </div>
+          )}
 
-          {/* Upcoming Deadlines */}
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Upcoming Deadlines</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Phase 2 Milestone</p>
-                  <p className="text-xs text-gray-600">Lekki-Epe Expressway</p>
+          {/* Deadlines Tab */}
+          {activeTab === 'deadlines' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
+              {upcomingDeadlines.map((deadline, index) => (
+                <div key={index} className={`p-4 rounded-lg border-l-4 ${
+                  deadline.status === 'at-risk' ? 'bg-red-50 border-red-500' :
+                  deadline.status === 'ahead' ? 'bg-green-50 border-green-500' :
+                  'bg-yellow-50 border-yellow-500'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{deadline.milestone}</h4>
+                      <p className="text-sm text-gray-600">{deadline.project}</p>
+                      <p className="text-sm text-gray-500">Due: {new Date(deadline.dueDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${
+                        deadline.status === 'at-risk' ? 'text-red-700' :
+                        deadline.status === 'ahead' ? 'text-green-700' :
+                        'text-yellow-700'
+                      }`}>
+                        {deadline.daysLeft} days
+                      </p>
+                      <p className="text-sm text-gray-600">remaining</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-yellow-700">15 days</p>
-                  <p className="text-xs text-gray-600">remaining</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Monthly Report</p>
-                  <p className="text-xs text-gray-600">All Projects</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-red-700">3 days</p>
-                  <p className="text-xs text-gray-600">overdue</p>
-                </div>
-              </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Upload Modal */}
+      {/* Enhanced Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Submit Project Update</h3>
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Submit Project Update</h3>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Project
-                </label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500">
-                  {contractorProjects.map(project => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Project *
+                  </label>
+                  <select 
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500"
+                  >
+                    <option value="">Choose project...</option>
+                    {contractorProjects.map(project => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Update Type *
+                  </label>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500">
+                    <option value="progress">Progress Update</option>
+                    <option value="milestone">Milestone Completion</option>
+                    <option value="issue">Report Issue</option>
+                    <option value="delay">Report Delay</option>
+                    <option value="safety">Safety Report</option>
+                    <option value="quality">Quality Update</option>
+                  </select>
+                </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Update Type
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Progress Percentage
                 </label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500">
-                  <option value="progress">Progress Update</option>
-                  <option value="milestone">Milestone Completion</option>
-                  <option value="issue">Report Issue</option>
-                  <option value="general">General Update</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500"
-                  rows="3"
-                  placeholder="Describe the update..."
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  className="w-full"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Attach Photos/Documents
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description *
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                <textarea 
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500"
+                  rows="4"
+                  placeholder="Describe the update, progress made, or issues encountered..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Attach Files
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">Drag and drop files here, or click to select</p>
+                  <p className="text-sm text-gray-500">PNG, JPG, PDF up to 10MB each</p>
+                  <button className="mt-3 btn-secondary">
+                    Choose Files
+                  </button>
                 </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">Submission Guidelines</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Include clear, high-quality photos of work progress</li>
+                  <li>• Provide detailed descriptions of completed activities</li>
+                  <li>• Report any delays or issues immediately</li>
+                  <li>• Ensure all safety protocols are documented</li>
+                </ul>
               </div>
             </div>
             
-            <div className="flex space-x-3 mt-6">
+            <div className="flex space-x-3 mt-8">
               <button 
                 onClick={() => setShowUploadModal(false)}
                 className="flex-1 btn-secondary"
@@ -381,9 +725,10 @@ export default function ContractorDashboard() {
               </button>
               <button 
                 onClick={() => setShowUploadModal(false)}
-                className="flex-1 btn-primary"
+                className="flex-1 btn-primary flex items-center justify-center space-x-2"
               >
-                Submit Update
+                <Send className="h-4 w-4" />
+                <span>Submit Update</span>
               </button>
             </div>
           </div>
