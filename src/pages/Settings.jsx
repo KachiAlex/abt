@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   User, 
   Bell, 
@@ -20,13 +20,36 @@ import {
   Smartphone,
   Check,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Camera,
+  Image
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Settings() {
+  const { user, updateUser } = useAuth();
+  const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  
+  // Initialize form data with user data
+  const [formData, setFormData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    jobTitle: user?.jobTitle || '',
+    department: user?.department || '',
+    address: user?.address || '',
+    city: user?.city || '',
+    state: user?.state || 'Abia State'
+  });
+  
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -54,6 +77,105 @@ export default function Settings() {
     }));
   };
 
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
+      setProfileImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemovePhoto = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    setSaving(true);
+    setSuccessMessage('');
+
+    try {
+      // In a real app, this would make API calls to update the profile
+      // For demo purposes, we'll simulate the update
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Update user context with new data
+      updateUser(formData);
+
+      // If there's a profile image, simulate upload
+      if (profileImage) {
+        // In a real app, you'd upload to your backend/cloud storage
+        console.log('Uploading profile image:', profileImage.name);
+      }
+
+      setSuccessMessage('Profile updated successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      jobTitle: user?.jobTitle || '',
+      department: user?.department || '',
+      address: user?.address || '',
+      city: user?.city || '',
+      state: user?.state || 'Abia State'
+    });
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -63,13 +185,27 @@ export default function Settings() {
           <p className="text-gray-600">Manage your account settings and preferences.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
-          <button className="btn-secondary flex items-center space-x-2">
+          {successMessage && (
+            <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+              <Check className="h-4 w-4" />
+              <span className="text-sm font-medium">{successMessage}</span>
+            </div>
+          )}
+          <button 
+            onClick={handleReset}
+            className="btn-secondary flex items-center space-x-2"
+            disabled={loading}
+          >
             <RefreshCw className="h-4 w-4" />
             <span>Reset</span>
           </button>
-          <button className="btn-primary flex items-center space-x-2">
+          <button 
+            onClick={handleSaveChanges}
+            className="btn-primary flex items-center space-x-2"
+            disabled={loading}
+          >
             <Save className="h-4 w-4" />
-            <span>Save Changes</span>
+            <span>{loading ? 'Saving...' : 'Save Changes'}</span>
           </button>
         </div>
       </div>
@@ -114,17 +250,75 @@ export default function Settings() {
                 
                 {/* Profile Photo */}
                 <div className="flex items-center space-x-6 mb-6">
-                  <div className="w-20 h-20 bg-abia-100 rounded-full flex items-center justify-center">
-                    <span className="text-abia-600 font-semibold text-xl">JD</span>
+                  <div className="relative">
+                    <div className="w-20 h-20 bg-abia-100 rounded-full flex items-center justify-center overflow-hidden">
+                      {profileImagePreview ? (
+                        <img 
+                          src={profileImagePreview} 
+                          alt="Profile preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-abia-600 font-semibold text-xl">
+                          {user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() : 'U'}
+                        </span>
+                      )}
+                    </div>
+                    {(profileImagePreview || profileImage) && (
+                      <button
+                        onClick={handleRemovePhoto}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                   <div>
-                    <button className="btn-secondary mr-3">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Photo
-                    </button>
-                    <button className="text-red-600 hover:text-red-700 text-sm">
-                      Remove
-                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      capture="environment" // This enables camera on mobile devices
+                    />
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={handleUploadClick}
+                          className="btn-secondary flex items-center space-x-2"
+                        >
+                          <Image className="h-4 w-4" />
+                          <span>Choose from Gallery</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            // Create a new input for camera capture
+                            const cameraInput = document.createElement('input');
+                            cameraInput.type = 'file';
+                            cameraInput.accept = 'image/*';
+                            cameraInput.capture = 'camera'; // This specifically requests camera
+                            cameraInput.onchange = handleFileSelect;
+                            cameraInput.click();
+                          }}
+                          className="btn-secondary flex items-center space-x-2"
+                        >
+                          <Camera className="h-4 w-4" />
+                          <span>Take Photo</span>
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        JPEG, PNG, GIF or WebP. Max 5MB.
+                      </p>
+                      {profileImage && (
+                        <div className="flex items-center space-x-2">
+                          <Check className="h-4 w-4 text-green-600" />
+                          <p className="text-xs text-green-600 font-medium">
+                            {profileImage.name} selected ({(profileImage.size / 1024 / 1024).toFixed(2)} MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -136,8 +330,10 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="John"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      placeholder="Enter first name"
                     />
                   </div>
                   <div>
@@ -146,8 +342,10 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="Doe"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      placeholder="Enter last name"
                     />
                   </div>
                   <div>
@@ -158,8 +356,10 @@ export default function Settings() {
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
                         type="email"
-                        defaultValue="john.doe@abiastate.gov.ng"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                        placeholder="Enter email address"
                       />
                     </div>
                   </div>
@@ -171,8 +371,10 @@ export default function Settings() {
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
                         type="tel"
-                        defaultValue="+234 803 123 4567"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                        placeholder="Enter phone number"
                       />
                     </div>
                   </div>
@@ -182,8 +384,10 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="Government Official"
+                      value={formData.jobTitle}
+                      onChange={(e) => handleInputChange('jobTitle', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      placeholder="Enter job title"
                     />
                   </div>
                   <div>
@@ -192,11 +396,19 @@ export default function Settings() {
                     </label>
                     <div className="relative">
                       <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <select className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent">
-                        <option>Ministry of Works</option>
-                        <option>Ministry of Health</option>
-                        <option>Ministry of Education</option>
-                        <option>Ministry of Water Resources</option>
+                      <select 
+                        value={formData.department}
+                        onChange={(e) => handleInputChange('department', e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      >
+                        <option value="">Select department</option>
+                        <option value="Ministry of Works">Ministry of Works</option>
+                        <option value="Ministry of Health">Ministry of Health</option>
+                        <option value="Ministry of Education">Ministry of Education</option>
+                        <option value="Ministry of Water Resources">Ministry of Water Resources</option>
+                        <option value="Ministry of Agriculture">Ministry of Agriculture</option>
+                        <option value="Ministry of Commerce">Ministry of Commerce</option>
+                        <option value="Project Monitoring Unit">Project Monitoring Unit</option>
                       </select>
                     </div>
                   </div>
@@ -212,8 +424,10 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="Government House, Umuahia"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      placeholder="Enter street address"
                     />
                   </div>
                   <div>
@@ -222,8 +436,10 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="Umuahia"
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      placeholder="Enter city"
                     />
                   </div>
                   <div>
@@ -232,8 +448,10 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="Abia State"
+                      value={formData.state}
+                      onChange={(e) => handleInputChange('state', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                      placeholder="Enter state"
                     />
                   </div>
                 </div>
