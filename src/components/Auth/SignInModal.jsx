@@ -70,10 +70,34 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
       if (formData.email && formData.password) {
         // Demo credentials for different roles
         const demoCredentials = {
-          'admin@abiastate.gov.ng': { role: 'GOVERNMENT_ADMIN', name: 'John Doe' },
-          'officer@abiastate.gov.ng': { role: 'GOVERNMENT_OFFICER', name: 'Jane Smith' },
-          'contractor@abiainfra.com': { role: 'CONTRACTOR', name: 'Adebayo Johnson' },
-          'me@abiastate.gov.ng': { role: 'ME_OFFICER', name: 'Mike Wilson' }
+          'admin@abiastate.gov.ng': { 
+            role: 'GOVERNMENT_ADMIN', 
+            firstName: 'Chinedu', 
+            lastName: 'Okafor',
+            jobTitle: 'Chief of Staff',
+            department: 'Office of the Governor'
+          },
+          'officer@abiastate.gov.ng': { 
+            role: 'GOVERNMENT_OFFICER', 
+            firstName: 'Ngozi', 
+            lastName: 'Eze',
+            jobTitle: 'Project Coordinator',
+            department: 'Ministry of Works'
+          },
+          'contractor@abiainfra.com': { 
+            role: 'CONTRACTOR', 
+            firstName: 'Emeka', 
+            lastName: 'Nwankwo',
+            jobTitle: 'Project Manager',
+            department: 'Abia Infrastructure Ltd'
+          },
+          'me@abiastate.gov.ng': { 
+            role: 'ME_OFFICER', 
+            firstName: 'Chioma', 
+            lastName: 'Okoro',
+            jobTitle: 'Senior M&E Officer',
+            department: 'Project Monitoring Unit'
+          }
         };
 
         const userInfo = demoCredentials[formData.email];
@@ -82,11 +106,16 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
           // Simulate successful login
           const authData = {
             user: {
-              id: '1',
+              id: `user-${Date.now()}`,
               email: formData.email,
-              firstName: userInfo.name.split(' ')[0],
-              lastName: userInfo.name.split(' ')[1],
-              role: userInfo.role
+              firstName: userInfo.firstName,
+              lastName: userInfo.lastName,
+              role: userInfo.role,
+              jobTitle: userInfo.jobTitle,
+              department: userInfo.department,
+              phone: '+234 803 123 4567',
+              city: 'Umuahia',
+              state: 'Abia State'
             },
             token: 'demo-jwt-token'
           };
@@ -238,6 +267,15 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">Password:</span>
                         <code className="text-xs bg-white px-2 py-1 rounded border">demo123</code>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">User:</span>
+                        <span className="text-xs text-gray-700 font-medium">
+                          {role === 'GOVERNMENT_ADMIN' ? 'Chinedu Okafor' :
+                           role === 'GOVERNMENT_OFFICER' ? 'Ngozi Eze' :
+                           role === 'CONTRACTOR' ? 'Emeka Nwankwo' :
+                           'Chioma Okoro'}
+                        </span>
                       </div>
                     </div>
                   </div>
