@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   User, 
   Bell, 
@@ -61,6 +61,23 @@ export default function Settings() {
   const [theme, setTheme] = useState('light');
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('WAT');
+
+  // Sync form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        jobTitle: user.jobTitle || '',
+        department: user.department || '',
+        address: user.address || '',
+        city: user.city || '',
+        state: user.state || 'Abia State'
+      });
+    }
+  }, [user]);
 
   const tabs = [
     { id: 'profile', name: 'Profile', icon: User },

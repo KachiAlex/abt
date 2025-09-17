@@ -49,8 +49,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (userData) => {
-    setUser(prev => ({ ...prev, ...userData }));
-    const authData = { user: { ...user, ...userData }, token };
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    const authData = { user: updatedUser, token };
     localStorage.setItem('abt_auth', JSON.stringify(authData));
   };
 
