@@ -1,15 +1,40 @@
-import { Bell, Search, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Bell, Search, ChevronDown, Sun, Moon, LogOut, User, Settings } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Header({ title = "Dashboard" }) {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [notifications] = useState([
-    { id: 1, text: "Alimosho Water Project is 2 weeks behind schedule", type: "warning", time: "2 hours ago" },
-    { id: 2, text: "Contractor uploaded new progress photos for Lekki-Epe Expressway", type: "info", time: "5 hours ago" },
-    { id: 3, text: "M&E Officer approved milestone for Ikorodu Healthcare Center", type: "success", time: "Yesterday" },
+    { id: 1, text: "Aba South Water Project is 2 weeks behind schedule", type: "warning", time: "2 hours ago" },
+    { id: 2, text: "Contractor uploaded new progress photos for Aba-Umuahia Expressway", type: "info", time: "5 hours ago" },
+    { id: 3, text: "M&E Officer approved milestone for Umuahia Hospital Upgrade", type: "success", time: "Yesterday" },
   ]);
   
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+
+  const handleSignOut = () => {
+    signOut();
+    navigate('/');
+  };
+
+  const getRoleDisplayName = (role) => {
+    const roleNames = {
+      'GOVERNMENT_ADMIN': 'Government Administrator',
+      'GOVERNMENT_OFFICER': 'Government Officer', 
+      'CONTRACTOR': 'Contractor',
+      'ME_OFFICER': 'M&E Officer'
+    };
+    return roleNames[role] || role;
+  };
+
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U';
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -90,16 +115,67 @@ export default function Header({ title = "Dashboard" }) {
 
           {/* User menu */}
           <div className="relative">
-            <button className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <div className="w-8 h-8 bg-abia-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">JD</span>
+                <span className="text-white font-semibold text-sm">{getUserInitials()}</span>
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-900">John Doe</p>
-                <p className="text-xs text-gray-500">Government Official</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {user ? getRoleDisplayName(user.role) : 'Role'}
+                </p>
               </div>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
+
+            {/* User dropdown menu */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-4 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-900">
+                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {user ? getRoleDisplayName(user.role) : 'Role'}
+                  </p>
+                </div>
+                <div className="py-2">
+                  <button 
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/settings');
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <User className="h-4 w-4 mr-3" />
+                    Profile Settings
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/settings');
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <Settings className="h-4 w-4 mr-3" />
+                    Preferences
+                  </button>
+                  <div className="border-t border-gray-200 my-2"></div>
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4 mr-3" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

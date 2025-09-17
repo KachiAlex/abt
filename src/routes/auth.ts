@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { validate } from '../middleware/validation';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
+import { UserRole } from '@prisma/client';
 import {
   register,
   login,
@@ -53,8 +54,8 @@ const passwordChangeValidation = [
     .withMessage('New password must contain uppercase, lowercase, number and special character'),
 ];
 
-// Routes
-router.post('/register', validate(registerValidation), register);
+// Routes - Registration restricted to admin only
+router.post('/register', authenticate, authorize([UserRole.GOVERNMENT_ADMIN]), validate(registerValidation), register);
 router.post('/login', validate(loginValidation), login);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, validate(profileUpdateValidation), updateProfile);

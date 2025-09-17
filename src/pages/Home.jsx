@@ -9,12 +9,17 @@ import {
   Star,
   Globe,
   Phone,
-  Mail
+  Mail,
+  LogIn
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SignInModal from '../components/Auth/SignInModal';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Home() {
   const [selectedRole, setSelectedRole] = useState('government');
+  const [showSignInModal, setShowSignInModal] = useState(false);
+  const { isAuthenticated, signIn } = useAuth();
 
   const roles = [
     {
@@ -191,21 +196,25 @@ export default function Home() {
           {/* Enter Button */}
           <div className="text-center">
             {selectedRole && (
-              <Link
-                to={roles.find(r => r.id === selectedRole)?.route || '/'}
+              <button
+                onClick={() => setShowSignInModal(true)}
                 className={`inline-flex items-center px-8 py-4 rounded-lg text-white font-semibold text-lg transition-colors ${
                   roles.find(r => r.id === selectedRole)?.color || 'bg-abia-600 hover:bg-abia-700'
                 }`}
               >
-                Enter as {roles.find(r => r.id === selectedRole)?.name}
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign In as {roles.find(r => r.id === selectedRole)?.name}
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              </button>
             )}
           </div>
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-500">
-              By logging in, you agree to our{' '}
+              Authorized access only. Contact your administrator for account access.
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              By signing in, you agree to our{' '}
               <a href="#" className="text-abia-600 hover:text-abia-700">Terms of Service</a>
               {' '}and{' '}
               <a href="#" className="text-abia-600 hover:text-abia-700">Privacy Policy</a>
@@ -322,6 +331,13 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Sign In Modal */}
+      <SignInModal 
+        isOpen={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+        onSignIn={signIn}
+      />
     </div>
   );
 }

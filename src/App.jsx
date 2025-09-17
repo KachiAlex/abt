@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -55,17 +57,61 @@ function AppContent() {
         
         <main className="p-6">
           <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/new" element={<ProjectNew />} />
-            <Route path="/projects/:id" element={<ProjectDetail />} />
-            <Route path="/contractors" element={<Contractors />} />
-            <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
-            <Route path="/me/dashboard" element={<MEDashboard />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/map" element={<MapView />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER']}>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER']}>
+                <Projects />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/new" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN']}>
+                <ProjectNew />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/:id" element={
+              <ProtectedRoute>
+                <ProjectDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/contractors" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER']}>
+                <Contractors />
+              </ProtectedRoute>
+            } />
+            <Route path="/contractor/dashboard" element={
+              <ProtectedRoute roles={['CONTRACTOR']}>
+                <ContractorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/me/dashboard" element={
+              <ProtectedRoute roles={['ME_OFFICER']}>
+                <MEDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER']}>
+                <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER']}>
+                <Analytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/map" element={
+              <ProtectedRoute>
+                <MapView />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
       </div>
@@ -76,7 +122,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }
