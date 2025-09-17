@@ -97,7 +97,7 @@ export default function Dashboard() {
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900">John Doe approved a milestone for Lekki-Epe Expressway</p>
+                  <p className="text-sm text-gray-900">John Doe approved a milestone for Aba-Umuahia Expressway</p>
                   <p className="text-xs text-gray-500">2 hours ago</p>
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function Dashboard() {
                   <Activity className="h-5 w-5 text-blue-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900">Sarah Johnson added a new project: Badagry Marina Development</p>
+                  <p className="text-sm text-gray-900">Sarah Johnson added a new project: Aba Marina Development</p>
                   <p className="text-xs text-gray-500">Yesterday</p>
                 </div>
               </div>
@@ -117,7 +117,7 @@ export default function Dashboard() {
                   <AlertTriangle className="h-5 w-5 text-yellow-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900">Michael Adebayo flagged an issue with Alimosho Water Project</p>
+                  <p className="text-sm text-gray-900">Michael Adebayo flagged an issue with Aba South Water Project</p>
                   <p className="text-xs text-gray-500">2 days ago</p>
                 </div>
               </div>

@@ -5,18 +5,18 @@ import clsx from 'clsx';
 const projects = [
   {
     id: 'PRJ-2023-001',
-    name: 'Lekki-Epe Expressway Expansion',
-    location: 'Eti-Osa',
+    name: 'Aba-Umuahia Expressway Expansion',
+    location: 'Aba North',
     budget: '₦1.2B',
     progress: 65,
     status: 'In Progress',
     lastUpdate: '2 days ago',
-    contractor: 'Lagos Infrastructure Ltd'
+    contractor: 'Abia Infrastructure Ltd'
   },
   {
     id: 'PRJ-2023-002',
-    name: 'Ikorodu Healthcare Center',
-    location: 'Ikorodu',
+    name: 'Umuahia General Hospital Upgrade',
+    location: 'Umuahia North',
     budget: '₦450M',
     progress: 100,
     status: 'Completed',
@@ -25,8 +25,8 @@ const projects = [
   },
   {
     id: 'PRJ-2023-003',
-    name: 'Alimosho Water Project',
-    location: 'Alimosho',
+    name: 'Aba South Water Treatment Plant',
+    location: 'Aba South',
     budget: '₦780M',
     progress: 30,
     status: 'Delayed',
@@ -35,8 +35,8 @@ const projects = [
   },
   {
     id: 'PRJ-2023-004',
-    name: 'Surulere Road Rehabilitation',
-    location: 'Surulere',
+    name: 'Arochukwu Road Rehabilitation',
+    location: 'Arochukwu',
     budget: '₦650M',
     progress: 45,
     status: 'In Progress',

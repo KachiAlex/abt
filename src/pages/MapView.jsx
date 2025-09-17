@@ -24,78 +24,78 @@ import clsx from 'clsx';
 const projectLocations = [
   {
     id: 'PRJ-2023-001',
-    name: 'Lekki-Epe Expressway Expansion',
-    lat: 6.4281,
-    lng: 3.6014,
+    name: 'Aba-Umuahia Expressway Expansion',
+    lat: 5.1058,
+    lng: 7.3668,
     status: 'In Progress',
     progress: 65,
     budget: '₦1.2B',
-    lga: 'Eti-Osa',
-    contractor: 'Lagos Infrastructure Ltd',
+    lga: 'Aba North',
+    contractor: 'Abia Infrastructure Ltd',
     category: 'Transportation',
     priority: 'High'
   },
   {
     id: 'PRJ-2023-002',
-    name: 'Ikorodu Healthcare Center',
-    lat: 6.6018,
-    lng: 3.5106,
+    name: 'Umuahia General Hospital Upgrade',
+    lat: 5.5250,
+    lng: 7.4951,
     status: 'Completed',
     progress: 100,
     budget: '₦450M',
-    lga: 'Ikorodu',
+    lga: 'Umuahia North',
     contractor: 'Medical Facilities Nigeria',
     category: 'Healthcare',
     priority: 'Medium'
   },
   {
     id: 'PRJ-2023-003',
-    name: 'Alimosho Water Treatment Plant',
-    lat: 6.6637,
-    lng: 3.2750,
+    name: 'Aba South Water Treatment Plant',
+    lat: 5.0760,
+    lng: 7.3665,
     status: 'Delayed',
     progress: 30,
     budget: '₦780M',
-    lga: 'Alimosho',
+    lga: 'Aba South',
     contractor: 'Aqua Systems Ltd',
     category: 'Water & Sanitation',
     priority: 'High'
   },
   {
     id: 'PRJ-2023-004',
-    name: 'Surulere Road Rehabilitation',
-    lat: 6.5027,
-    lng: 3.3598,
+    name: 'Arochukwu Road Network',
+    lat: 5.3902,
+    lng: 7.9124,
     status: 'In Progress',
     progress: 45,
     budget: '₦650M',
-    lga: 'Surulere',
+    lga: 'Arochukwu',
     contractor: 'Road Masters Nigeria',
     category: 'Transportation',
     priority: 'Medium'
   },
   {
     id: 'PRJ-2023-005',
-    name: 'Ikeja Education Complex',
-    lat: 6.5954,
-    lng: 3.3364,
+    name: 'Bende Education Complex',
+    lat: 5.5583,
+    lng: 7.6356,
     status: 'In Progress',
     progress: 72,
     budget: '₦920M',
-    lga: 'Ikeja',
+    lga: 'Bende',
     contractor: 'Education Builders Ltd',
     category: 'Education',
     priority: 'High'
   },
   {
     id: 'PRJ-2023-006',
-    name: 'Kosofe Housing Development',
-    lat: 6.4698,
-    lng: 3.3792,
+    name: 'Osisioma Housing Development',
+    lat: 5.1500,
+    lng: 7.3500,
     status: 'Not Started',
     progress: 0,
     budget: '₦1.5B',
-    lga: 'Kosofe',
+    lga: 'Osisioma',
     contractor: 'Housing Solutions Nigeria',
     category: 'Housing',
     priority: 'Low'
@@ -104,7 +104,7 @@ const projectLocations = [
 
 const categories = ['All Categories', 'Transportation', 'Healthcare', 'Water & Sanitation', 'Education', 'Housing'];
 const statuses = ['All Status', 'In Progress', 'Completed', 'Delayed', 'Not Started'];
-const lgas = ['All LGAs', 'Eti-Osa', 'Ikorodu', 'Alimosho', 'Surulere', 'Ikeja', 'Kosofe'];
+const lgas = ['All LGAs', 'Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'];
 
 const statusColors = {
   'Completed': '#10b981',

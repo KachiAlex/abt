@@ -21,15 +21,15 @@ import clsx from 'clsx';
 const contractors = [
   {
     id: 'CON-001',
-    name: 'Lagos Infrastructure Ltd',
-    email: 'info@lagosinfra.com',
+    name: 'Abia Infrastructure Ltd',
+    email: 'info@abiainfra.com',
     phone: '+234 801 234 5678',
     contact: 'Adebayo Johnson',
     specialization: 'Road Construction',
     rating: 4.8,
     status: 'Active',
     projects: { completed: 12, ongoing: 3 },
-    location: 'Lagos',
+    location: 'Umuahia',
     joinDate: '2021-03-15',
     totalValue: '₦8.5B'
   },
@@ -85,7 +85,7 @@ const contractors = [
     rating: 4.0,
     status: 'Inactive',
     projects: { completed: 3, ongoing: 0 },
-    location: 'Lagos',
+    location: 'Umuahia',
     joinDate: '2023-02-28',
     totalValue: '₦1.5B'
   }

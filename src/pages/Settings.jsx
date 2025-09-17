@@ -436,7 +436,7 @@ export default function Settings() {
                       <Monitor className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Windows PC - Chrome</p>
-                        <p className="text-sm text-gray-500">Lagos, Nigeria • Current session</p>
+                        <p className="text-sm text-gray-500">Umuahia, Nigeria • Current session</p>
                       </div>
                     </div>
                     <span className="text-sm text-green-600 font-medium">Active</span>

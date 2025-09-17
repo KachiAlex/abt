@@ -22,10 +22,10 @@ import clsx from 'clsx';
 const publicProjects = [
   {
     id: 'PRJ-2023-001',
-    name: 'Lekki-Epe Expressway Expansion',
-    description: 'Expansion of the Lekki-Epe Expressway from 4 to 8 lanes to reduce traffic congestion and improve connectivity.',
-    lga: 'Eti-Osa',
-    contractor: 'Lagos Infrastructure Ltd',
+    name: 'Aba-Umuahia Expressway Expansion',
+    description: 'Expansion of the Aba-Umuahia Expressway from 4 to 8 lanes to reduce traffic congestion and improve connectivity across Abia State.',
+    lga: 'Aba North',
+    contractor: 'Abia Infrastructure Ltd',
     budget: '₦1.2B',
     progress: 65,
     status: 'In Progress',
@@ -38,9 +38,9 @@ const publicProjects = [
   },
   {
     id: 'PRJ-2023-002',
-    name: 'Ikorodu Healthcare Center',
-    description: 'Construction of a modern 200-bed healthcare facility with specialized units for maternal and child health.',
-    lga: 'Ikorodu',
+    name: 'Umuahia General Hospital Upgrade',
+    description: 'Modernization of Umuahia General Hospital with a new 200-bed facility and specialized units for maternal and child health.',
+    lga: 'Umuahia North',
     contractor: 'Medical Facilities Nigeria',
     budget: '₦450M',
     progress: 100,
@@ -54,9 +54,9 @@ const publicProjects = [
   },
   {
     id: 'PRJ-2023-003',
-    name: 'Alimosho Water Treatment Plant',
-    description: 'Construction of water treatment facility to provide clean water access to underserved communities.',
-    lga: 'Alimosho',
+    name: 'Aba South Water Treatment Plant',
+    description: 'Construction of modern water treatment facility to provide clean water access to underserved communities in Aba South.',
+    lga: 'Aba South',
     contractor: 'Aqua Systems Ltd',
     budget: '₦780M',
     progress: 30,
@@ -71,7 +71,7 @@ const publicProjects = [
 ];
 
 const categories = ['All Categories', 'Transportation', 'Healthcare', 'Water & Sanitation', 'Education', 'Housing'];
-const lgas = ['All LGAs', 'Eti-Osa', 'Ikorodu', 'Alimosho', 'Surulere', 'Ikeja', 'Kosofe'];
+const lgas = ['All LGAs', 'Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'];
 
 const statusStyles = {
   'Completed': 'status-completed',

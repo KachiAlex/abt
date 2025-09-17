@@ -17,9 +17,9 @@ import clsx from 'clsx';
 const projects = [
   {
     id: 'PRJ-2023-001',
-    name: 'Lekki-Epe Expressway Expansion',
-    lga: 'Eti-Osa',
-    contractor: 'Lagos Infrastructure Ltd',
+    name: 'Aba-Umuahia Expressway Expansion',
+    lga: 'Aba North',
+    contractor: 'Abia Infrastructure Ltd',
     timeline: '1/15/2023 to 6/30/2024',
     budget: '₦1.2B',
     status: 'In Progress',
@@ -28,8 +28,8 @@ const projects = [
   },
   {
     id: 'PRJ-2023-002',
-    name: 'Ikorodu Healthcare Center',
-    lga: 'Ikorodu',
+    name: 'Umuahia General Hospital Upgrade',
+    lga: 'Umuahia North',
     contractor: 'Medical Facilities Nigeria',
     timeline: '11/10/2022 to 9/30/2023',
     budget: '₦450M',
@@ -39,8 +39,8 @@ const projects = [
   },
   {
     id: 'PRJ-2023-003',
-    name: 'Alimosho Water Project',
-    lga: 'Alimosho',
+    name: 'Aba South Water Treatment Plant',
+    lga: 'Aba South',
     contractor: 'Aqua Systems Ltd',
     timeline: '2/20/2023 to 2/20/2024',
     budget: '₦780M',
@@ -50,8 +50,8 @@ const projects = [
   },
   {
     id: 'PRJ-2023-004',
-    name: 'Surulere Road Rehabilitation',
-    lga: 'Surulere',
+    name: 'Arochukwu Road Rehabilitation',
+    lga: 'Arochukwu',
     contractor: 'Road Masters Nigeria',
     timeline: '3/5/2023 to 12/15/2023',
     budget: '₦650M',
@@ -62,7 +62,7 @@ const projects = [
 ];
 
 const statusOptions = ['All Statuses', 'In Progress', 'Completed', 'Delayed', 'Not Started'];
-const lgaOptions = ['All LGAs', 'Eti-Osa', 'Ikorodu', 'Alimosho', 'Surulere', 'Ikeja', 'Kosofe'];
+const lgaOptions = ['All LGAs', 'Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'];
 
 const statusStyles = {
   'Completed': 'status-completed',

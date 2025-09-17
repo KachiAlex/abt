@@ -24,14 +24,14 @@ import clsx from 'clsx';
 const projectData = {
   'PRJ-2023-001': {
     id: 'PRJ-2023-001',
-    name: 'Lekki-Epe Expressway Expansion',
-    description: 'Expansion of the Lekki-Epe Expressway from 4 to 8 lanes including drainage systems and street lighting infrastructure.',
-    lga: 'Eti-Osa',
+    name: 'Aba-Umuahia Expressway Expansion',
+    description: 'Expansion of the Aba-Umuahia Expressway from 4 to 8 lanes including drainage systems and street lighting infrastructure.',
+    lga: 'Aba North',
     contractor: {
-      name: 'Lagos Infrastructure Ltd',
+      name: 'Abia Infrastructure Ltd',
       contact: 'Adebayo Johnson',
       phone: '+234 801 234 5678',
-      email: 'info@lagosinfra.com',
+      email: 'info@abiainfra.com',
       rating: 4.8
     },
     budget: {
@@ -47,8 +47,8 @@ const projectData = {
     status: 'In Progress',
     progress: 65,
     location: {
-      coordinates: '6.4281, 3.4219',
-      address: 'Lekki-Epe Expressway, Eti-Osa LGA, Lagos State'
+      coordinates: '5.1058, 7.3668',
+      address: 'Aba-Umuahia Expressway, Aba North LGA, Abia State'
     },
     milestones: [
       {
