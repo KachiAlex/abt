@@ -13,6 +13,7 @@ import {
   Download
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import clsx from 'clsx';
 
 const navigationItems = [
@@ -26,15 +27,36 @@ const navigationItems = [
 ];
 
 const quickActions = [
-  { name: 'Add New Project', href: '/projects/new', icon: Plus },
-  { name: 'Generate Report', href: '/reports/generate', icon: Download },
+  { name: 'Add New Project', href: '/projects/new', icon: Plus, roles: ['GOVERNMENT_ADMIN'] },
+  { name: 'Generate Report', href: '/reports', icon: Download, roles: ['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER'] },
 ];
 
 export default function Sidebar({ userRole = 'Government Official' }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U';
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+  };
+
+  const getRoleDisplayName = (role) => {
+    const roleNames = {
+      'GOVERNMENT_ADMIN': 'Government Administrator',
+      'GOVERNMENT_OFFICER': 'Government Officer', 
+      'CONTRACTOR': 'Contractor',
+      'ME_OFFICER': 'M&E Officer'
+    };
+    return roleNames[role] || role;
+  };
 
   return (
     <>
@@ -68,13 +90,15 @@ export default function Sidebar({ userRole = 'Government Official' }) {
         <div className="px-4 py-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-abia-100 rounded-full flex items-center justify-center">
-              <span className="text-abia-600 font-semibold text-sm">JD</span>
+              <span className="text-abia-600 font-semibold text-sm">{getUserInitials()}</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">John Doe</p>
-              <p className="text-xs text-gray-500">{userRole}</p>
+              <p className="text-sm font-medium text-gray-900">{getUserDisplayName()}</p>
+              <p className="text-xs text-gray-500">{user ? getRoleDisplayName(user.role) : userRole}</p>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
-                Admin
+                {user?.role === 'GOVERNMENT_ADMIN' ? 'Admin' : 
+                 user?.role === 'ME_OFFICER' ? 'M&E' :
+                 user?.role === 'CONTRACTOR' ? 'Contractor' : 'Officer'}
               </span>
             </div>
           </div>
@@ -116,17 +140,19 @@ export default function Sidebar({ userRole = 'Government Official' }) {
             Quick Actions
           </h3>
           <div className="mt-2 space-y-1">
-            {quickActions.map((action) => (
-              <Link
-                key={action.name}
-                to={action.href}
-                className="group flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <action.icon className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
-                {action.name}
-              </Link>
-            ))}
+            {quickActions
+              .filter(action => !action.roles || !user || action.roles.includes(user.role))
+              .map((action) => (
+                <Link
+                  key={action.name}
+                  to={action.href}
+                  className="group flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <action.icon className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
+                  {action.name}
+                </Link>
+              ))}
           </div>
         </div>
 

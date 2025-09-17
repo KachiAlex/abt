@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Activity
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import StatsCard from '../components/Dashboard/StatsCard';
 import ProjectStatusChart from '../components/Dashboard/ProjectStatusChart';
 import RecentProjects from '../components/Dashboard/RecentProjects';
@@ -73,18 +74,18 @@ export default function Dashboard() {
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
             <div className="space-y-3">
-              <button className="w-full btn-primary flex items-center justify-center space-x-2">
+              <Link to="/projects/new" className="w-full btn-primary flex items-center justify-center space-x-2">
                 <FolderOpen className="h-4 w-4" />
                 <span>Add New Project</span>
-              </button>
-              <button className="w-full btn-secondary flex items-center justify-center space-x-2">
+              </Link>
+              <Link to="/me/dashboard" className="w-full btn-secondary flex items-center justify-center space-x-2">
                 <Users className="h-4 w-4" />
                 <span>Review Contractor Updates</span>
-              </button>
-              <button className="w-full btn-secondary flex items-center justify-center space-x-2">
+              </Link>
+              <Link to="/reports" className="w-full btn-secondary flex items-center justify-center space-x-2">
                 <TrendingUp className="h-4 w-4" />
                 <span>Export Reports</span>
-              </button>
+              </Link>
             </div>
           </div>
 
