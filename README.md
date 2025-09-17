@@ -1,202 +1,319 @@
-# Abia Project Tracker (APT)
+# ABT Backend API
 
-**Enhancing Transparency, Accountability & Public Trust in Governance**
+**Abia Project Tracker Backend** - Comprehensive REST API for the digital accountability platform.
 
-A comprehensive digital accountability platform designed to enhance transparency, improve project delivery, and rebuild public trust in governance across Abia State, Nigeria.
+## 🏗️ Architecture
 
-![APT Dashboard](https://img.shields.io/badge/Status-Production%20Ready-green)
-![React](https://img.shields.io/badge/React-19.1.1-blue)
-![Vite](https://img.shields.io/badge/Vite-7.1.2-purple)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4.15-cyan)
+### Technology Stack
+- **Runtime**: Node.js with TypeScript
+- **Framework**: Express.js
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT with role-based access control
+- **File Upload**: Multer with local/cloud storage
+- **Real-time**: Socket.IO for live notifications
+- **Validation**: Express-validator
+- **Security**: Helmet, CORS, rate limiting
 
-## 🎯 Project Objectives
+### Project Structure
+```
+backend/
+├── src/
+│   ├── config/          # Configuration files
+│   ├── controllers/     # Route controllers
+│   ├── middleware/      # Custom middleware
+│   ├── models/          # Database models (Prisma)
+│   ├── routes/          # API routes
+│   ├── services/        # Business logic services
+│   ├── types/           # TypeScript type definitions
+│   ├── utils/           # Utility functions
+│   └── server.ts        # Main server file
+├── prisma/              # Database schema and migrations
+├── uploads/             # File upload directory
+└── dist/                # Compiled JavaScript
+```
 
-- **Enhance Transparency**: Real-time visibility into project status, location, and progress
-- **Strengthen Accountability**: Enable oversight bodies and public to track project performance
-- **Improve Monitoring**: Digital tools for government agencies and M&E teams
-- **Promote Timely Delivery**: Early identification of delays through data analytics
-- **Empower Citizens**: Public access to accurate infrastructure development information
-- **Support Data-Driven Governance**: Reliable dashboards and reports for decision-makers
-
-## 🏗️ System Architecture
-
-### Multi-Portal Platform
-
-1. **Executive Dashboard** - Government officials overview with KPIs and analytics
-2. **Project Management System** - Complete project tracking and detailed views
-3. **Contractor Portal** - Milestone updates and media upload system
-4. **M&E Interface** - Verification dashboard for monitoring and evaluation
-5. **Public Transparency Portal** - Citizen-facing project information
-
-## 🚀 Features
-
-### For Government Officials
-- **Real-time project dashboard** with key performance indicators
-- **Budget tracking** with allocated, spent, and remaining funds
-- **Project status monitoring** across all 20 LGAs
-- **Contractor performance analytics**
-- **Executive reporting** and data export capabilities
-
-### For Contractors
-- **Project assignment dashboard** with active projects overview
-- **Milestone submission system** with photo/video uploads
-- **Progress tracking** with real-time status updates
-- **Direct communication** with M&E teams
-- **Performance metrics** and completion tracking
-
-### For M&E Officers
-- **Submission review queue** with priority filtering
-- **Approval workflow** for milestones and progress updates
-- **Site inspection tools** and verification interface
-- **Issue flagging** and resolution tracking
-- **Performance reporting** and analytics
-
-### For Citizens
-- **Public project directory** with search and filtering
-- **Real-time progress tracking** for community projects
-- **Budget transparency** with investment information
-- **Contractor information** and project timelines
-- **Mobile-responsive interface** for all devices
-
-## 🛠️ Technology Stack
-
-- **Frontend**: React 19.1.1 with Vite
-- **Styling**: TailwindCSS with custom government branding
-- **Icons**: Lucide React
-- **Charts**: Recharts for data visualization
-- **Routing**: React Router DOM
-- **Development**: ESLint, PostCSS, Autoprefixer
-
-## 📦 Installation & Setup
+## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- npm or yarn package manager
+- PostgreSQL database
+- npm or yarn
 
-### Quick Start
+### Installation
+```bash
+cd backend
+npm install
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/KachiAlex/abt.git
-   cd abt
-   ```
+### Environment Setup
+```bash
+cp env.example .env
+# Edit .env with your configuration
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### Database Setup
+```bash
+# Generate Prisma client
+npm run db:generate
 
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
+# Push schema to database
+npm run db:push
 
-4. **Open your browser**
-   Navigate to `http://localhost:5173`
+# Or run migrations
+npm run db:migrate
+
+# Open Prisma Studio (optional)
+npm run db:studio
+```
+
+### Development
+```bash
+npm run dev
+```
+
+### Production
+```bash
+npm run build
+npm start
+```
+
+## 📡 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update user profile
+- `PUT /api/auth/change-password` - Change password
+
+### Projects
+- `GET /api/projects` - Get projects (with filtering)
+- `GET /api/projects/:id` - Get project details
+- `POST /api/projects` - Create new project (Admin only)
+- `PUT /api/projects/:id` - Update project
+- `DELETE /api/projects/:id` - Delete project (Admin only)
+- `GET /api/projects/stats` - Get project statistics
+
+### Contractors
+- `GET /api/contractors` - Get contractors list
+- `GET /api/contractors/:id` - Get contractor details
+- `GET /api/contractors/:id/stats` - Get contractor statistics
+- `PUT /api/contractors/:id` - Update contractor profile
+- `GET /api/contractors/:id/performance` - Get performance data
+- `POST /api/contractors/assign-project` - Assign project to contractor
+
+### Submissions
+- `GET /api/submissions` - Get submissions (role-based)
+- `GET /api/submissions/:id` - Get submission details
+- `POST /api/submissions` - Create submission (Contractor only)
+- `PUT /api/submissions/:id` - Update submission
+- `PUT /api/submissions/:id/review` - Review submission (M&E only)
+- `DELETE /api/submissions/:id` - Delete submission
+- `GET /api/submissions/stats` - Get submission statistics
+
+### Dashboard
+- `GET /api/dashboard/stats` - Get dashboard statistics
+- `GET /api/dashboard/project-status-chart` - Project status chart data
+- `GET /api/dashboard/budget-analysis` - Budget analysis data
+- `GET /api/dashboard/lga-performance` - LGA performance data
+- `GET /api/dashboard/recent-activity` - Recent activity feed
+
+### Public (No authentication required)
+- `GET /api/public/projects` - Get public projects
+- `GET /api/public/projects/:id` - Get public project details
+- `GET /api/public/stats` - Get public statistics
+- `GET /api/public/projects-by-category` - Projects grouped by category
+- `GET /api/public/projects-by-lga` - Projects grouped by LGA
+- `GET /api/public/projects/search` - Search public projects
+
+### Reports
+- `GET /api/reports` - Get reports list
+- `POST /api/reports/generate` - Generate new report
+- `GET /api/reports/:id/download` - Download report
+
+### Users
+- `GET /api/users` - Get users (Admin only)
+- `POST /api/users/upload-profile-image` - Upload profile image
+- `GET /api/users/notifications` - Get user notifications
+- `PUT /api/users/notifications/:id/read` - Mark notification as read
+- `PUT /api/users/notifications/read-all` - Mark all notifications as read
+
+## 🔐 Authentication & Authorization
+
+### User Roles
+- `GOVERNMENT_ADMIN` - Full system access
+- `GOVERNMENT_OFFICER` - Government dashboard access
+- `CONTRACTOR` - Contractor portal access
+- `ME_OFFICER` - M&E dashboard access
+- `PUBLIC` - Public portal access (limited)
+
+### JWT Token Structure
+```json
+{
+  "userId": "uuid",
+  "email": "user@example.com",
+  "role": "GOVERNMENT_ADMIN",
+  "contractorId": "uuid" // Only for contractors
+}
+```
+
+### Authorization Matrix
+| Endpoint | Public | Contractor | M&E Officer | Gov Officer | Gov Admin |
+|----------|--------|------------|-------------|-------------|-----------|
+| Public APIs | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Own Projects | ❌ | ✅ | ✅ | ✅ | ✅ |
+| All Projects | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Create Project | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Review Submissions | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Generate Reports | ❌ | ❌ | ✅ | ✅ | ✅ |
+
+## 📊 Database Schema
+
+### Core Entities
+- **Users** - System users with role-based access
+- **ContractorProfiles** - Extended contractor information
+- **Projects** - Project management and tracking
+- **Milestones** - Project milestone tracking
+- **Submissions** - Contractor submissions and updates
+- **Approvals** - M&E review and approval workflow
+- **Documents** - File management and storage
+- **Notifications** - Real-time notification system
+- **Reports** - Generated reports and analytics
+- **AuditLogs** - System activity tracking
+
+## 🔄 Real-time Features
+
+### Socket.IO Events
+- `new-submission` - New contractor submission
+- `submission-reviewed` - Submission review completed
+- `project-updated` - Project status/progress updated
+- `deadline-reminder` - Upcoming deadline notifications
+- `inspection-scheduled` - New inspection scheduled
+
+### Notification Types
+- `DEADLINE` - Project/milestone deadlines
+- `PAYMENT` - Payment releases and updates
+- `INSPECTION` - Site inspection schedules
+- `APPROVAL` - Submission approvals
+- `REJECTION` - Submission rejections
+- `SYSTEM` - System-wide announcements
+
+## 🛡️ Security Features
+
+### Data Protection
+- Password hashing with bcrypt
+- JWT token authentication
+- Role-based access control
+- Input validation and sanitization
+- SQL injection prevention (Prisma)
+- XSS protection (Helmet)
+- Rate limiting
+- CORS configuration
+
+### File Upload Security
+- File type validation
+- File size limits (10MB)
+- Secure file naming
+- Directory traversal prevention
+- Virus scanning (recommended for production)
+
+## 📈 Performance Features
+
+### Optimization
+- Database query optimization
+- Response compression
+- Connection pooling (Prisma)
+- Caching strategies (Redis recommended)
+- Pagination for large datasets
+- Efficient filtering and search
+
+### Monitoring
+- Request logging (Morgan)
+- Error tracking
+- Performance metrics
+- Audit trail
+- Real-time analytics
+
+## 🚀 Deployment
+
+### Environment Variables
+```bash
+NODE_ENV=production
+PORT=5000
+DATABASE_URL=postgresql://...
+JWT_SECRET=your-secret-key
+# See env.example for complete list
+```
+
+### Docker Support
+```dockerfile
+# Dockerfile included for containerization
+# Supports multi-stage builds for optimization
+```
+
+### CI/CD Pipeline
+- Automated testing
+- Code quality checks
+- Security scanning
+- Deployment automation
+
+## 🧪 Testing
+
+### Test Coverage
+- Unit tests for controllers
+- Integration tests for APIs
+- Database tests with test containers
+- Authentication flow tests
+- File upload tests
+
+### Running Tests
+```bash
+npm test
+npm run test:coverage
+npm run test:integration
+```
+
+## 📚 API Documentation
+
+### Swagger/OpenAPI
+- Interactive API documentation
+- Request/response examples
+- Authentication examples
+- Error response formats
+
+Access at: `http://localhost:5000/api-docs`
+
+## 🔧 Development Tools
 
 ### Available Scripts
-
-- `npm run dev` - Start development server
+- `npm run dev` - Development server with hot reload
 - `npm run build` - Build for production
-- `npm run preview` - Preview production build
+- `npm start` - Start production server
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:push` - Push schema to database
+- `npm run db:migrate` - Run database migrations
+- `npm run db:studio` - Open Prisma Studio
+- `npm test` - Run tests
 - `npm run lint` - Run ESLint
 
-## 🗺️ Application Routes
+### Database Management
+```bash
+# Reset database
+npm run db:reset
 
-### Government Portal Routes
-- `/` - Executive Dashboard
-- `/projects` - Project Management System
-- `/projects/:id` - Detailed Project View
-- `/contractors` - Contractor Directory
-- `/contractor/dashboard` - Contractor Portal
-- `/me/dashboard` - M&E Officer Dashboard
+# Seed database with sample data
+npm run db:seed
 
-### Public Routes
-- `/public` - Public Transparency Portal
+# View database in browser
+npm run db:studio
+```
 
-## 📊 Project Status
+## 📞 Support
 
-### Completed Features ✅
-- Executive Dashboard with KPIs and analytics
-- Complete Project Management System
-- Contractor Portal with file uploads
-- M&E Verification Dashboard
-- Public Transparency Portal
-- Responsive design for all devices
-- Professional government branding
-
-### In Development 🔄
-- Advanced Analytics with AI-powered delay detection
-- Authentication and role-based access control
-- Real-time notifications system
-- Mobile app optimization
-
-## 💰 Budget Overview
-
-**Total Estimated Budget: ₦66,000,000**
-
-| Component | Cost |
-|-----------|------|
-| Software Development | ₦15,000,000 |
-| UI/UX Design | ₦4,500,000 |
-| Cloud Infrastructure | ₦10,000,000 |
-| AI/Analytics Integration | ₦5,500,000 |
-| Mobile Apps | ₦4,500,000 |
-| M&E Equipment | ₦5,000,000 |
-| Training & Onboarding | ₦2,000,000 |
-| Public Awareness | ₦3,000,000 |
-| Project Management | ₦3,000,000 |
-| Contingency (10%) | ₦5,000,000 |
-
-## 🚀 Deployment Roadmap
-
-### Phase 1: MVP Development (3 months)
-- Core platform development
-- Basic project tracking
-- Contractor portal
-- M&E interface
-
-### Phase 2: Pilot Program (2 months)
-- Deploy in 3 selected LGAs
-- User training and onboarding
-- System testing and refinement
-
-### Phase 3: Full Rollout (6 months)
-- Deploy across all 20 LGAs
-- Public portal launch
-- Advanced analytics implementation
-
-### Phase 4: Ongoing Support
-- System maintenance
-- Feature updates
-- Performance optimization
-
-## 🤝 Contributing
-
-We welcome contributions from the development community to improve the Abia Project Tracker.
-
-### Development Setup
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📞 Contact & Support
-
-**Prepared for:** The Chief of Staff of Abia State  
-**Prepared by:** Kreatix Technologies
-
-- **Email**: info@kreatixtech.com
-- **Website**: www.kreatixtech.com
-- **Government Contact**: +234 800 ABIA GOV
-
-## 📄 License
-
-This project is proprietary software developed for the Abia State Government. All rights reserved.
+**Developed by**: Kreatix Technologies  
+**Contact**: info@kreatixtech.com  
+**Documentation**: Full API docs available at `/api-docs`
 
 ---
 
-**Abia Project Tracker v1.0** - Enhancing Transparency, Accountability & Public Trust in Governance
-
-© 2025 Kreatix Technologies. Built with ❤️ for Abia State, Nigeria.
+© 2025 Kreatix Technologies. Built for Abia State Government.
