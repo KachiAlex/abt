@@ -71,6 +71,8 @@ export const api = onRequest(
   {
     timeoutSeconds: 540,
     memory: '1GiB',
+    cors: true,
+    invoker: 'public',
   },
   app
 );
