@@ -20,6 +20,7 @@ import contractorRoutes from './routes/contractors';
 import submissionRoutes from './routes/submissions';
 import dashboardRoutes from './routes/dashboard';
 import publicRoutes from './routes/public';
+import seedRoutes from './routes/seed';
 
 export const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/contractors', contractorRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/seed', seedRoutes);
 
 // 404 handler
 app.use((_req, res) => {

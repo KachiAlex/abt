@@ -74,6 +74,7 @@ import submissionRoutes from './routes/submissions';
 import dashboardRoutes from './routes/dashboard';
 import publicRoutes from './routes/public';
 import fileRoutes from './routes/files';
+import seedRoutes from './routes/seed';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -83,6 +84,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/seed', seedRoutes);
 
 // 404 handler
 app.use((_req, res) => {

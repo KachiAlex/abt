@@ -17,13 +17,14 @@ console.log('isFirebaseFunction:', isFirebaseFunction);
 
 // Import Firebase Functions conditionally
 let functionsConfig: any = {};
-if (isFirebaseFunction) {
-  try {
-    const functions = require('firebase-functions');
-    functionsConfig = functions.config();
-  } catch (error) {
-    console.warn('Firebase Functions not available, using environment variables');
+try {
+  const functions = require('firebase-functions');
+  functionsConfig = functions.config();
+  if (Object.keys(functionsConfig).length > 0) {
+    console.log('✅ Loaded Firebase Functions config');
   }
+} catch (error) {
+  console.warn('Firebase Functions config not available, using environment variables');
 }
 
 export const config = {
@@ -32,9 +33,9 @@ export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   isFirebaseFunction,
   
-  // JWT - Support both Firebase config and .env
+  // JWT - Check functions config first (for deployed Functions), then env vars
   jwtSecret: functionsConfig.jwt?.secret || process.env.JWT_SECRET || 'your-super-secure-jwt-secret-key-change-in-production',
-  jwtExpiresIn: functionsConfig.jwt?.expires || process.env.JWT_EXPIRES_IN || '7d',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || functionsConfig.jwt?.expires || '7d',
   
   // File Upload
   maxFileSize: parseInt(functionsConfig.upload?.maxsize || process.env.MAX_FILE_SIZE || '10485760', 10), // 10MB default
