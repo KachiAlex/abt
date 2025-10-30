@@ -12,7 +12,7 @@ import {
   Plus,
   Download
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import clsx from 'clsx';
 
@@ -27,14 +27,23 @@ const navigationItems = [
 ];
 
 const quickActions = [
-  { name: 'Add New Project', href: '/projects/new', icon: Plus, roles: ['GOVERNMENT_ADMIN'] },
   { name: 'Generate Report', href: '/reports', icon: Download, roles: ['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER'] },
 ];
 
 export default function Sidebar({ userRole = 'Government Official' }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
+  const handleQuickAction = (action) => {
+    console.log('Quick action clicked:', action);
+    console.log('User role:', user?.role);
+    console.log('Action roles:', action.roles);
+    console.log('Can access:', action.roles?.includes(user?.role));
+    setIsOpen(false);
+    navigate(action.href);
+  };
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -79,10 +88,10 @@ export default function Sidebar({ userRole = 'Government Official' }) {
         <div className="flex items-center justify-center h-16 px-4 bg-abia-600">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-              <span className="text-abia-600 font-bold text-sm">APT</span>
+              <span className="text-abia-600 font-bold text-sm">GPT</span>
             </div>
             <div className="text-white">
-              <h1 className="text-lg font-bold">Abia Project Tracker</h1>
+              <h1 className="text-lg font-bold">Government Project Tracker</h1>
             </div>
           </div>
         </div>
@@ -144,15 +153,14 @@ export default function Sidebar({ userRole = 'Government Official' }) {
             {quickActions
               .filter(action => !action.roles || !user || action.roles.includes(user.role))
               .map((action) => (
-                <Link
+                <button
                   key={action.name}
-                  to={action.href}
-                  className="group flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => handleQuickAction(action)}
+                  className="group flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors w-full text-left"
                 >
                   <action.icon className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
                   {action.name}
-                </Link>
+                </button>
               ))}
           </div>
         </div>
@@ -160,7 +168,7 @@ export default function Sidebar({ userRole = 'Government Official' }) {
         {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="text-xs text-gray-500 text-center">
-            <p>Abia Project Tracker v1.0</p>
+            <p>Government Project Tracker v1.0</p>
             <p>© 2025 Kreatix Technologies</p>
           </div>
         </div>

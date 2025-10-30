@@ -17,79 +17,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import { useContractors } from '../contexts/ContractorsContext';
+import ContractorDebug from '../components/Debug/ContractorDebug';
+import ContractorDetailModal from '../components/Contractors/ContractorDetailModal';
 
-const contractors = [
-  {
-    id: 'CON-001',
-    name: 'Abia Infrastructure Ltd',
-    email: 'info@abiainfra.com',
-    phone: '+234 801 234 5678',
-    contact: 'Adebayo Johnson',
-    specialization: 'Road Construction',
-    rating: 4.8,
-    status: 'Active',
-    projects: { completed: 12, ongoing: 3 },
-    location: 'Umuahia',
-    joinDate: '2021-03-15',
-    totalValue: '₦8.5B'
-  },
-  {
-    id: 'CON-002',
-    name: 'Medical Facilities Nigeria',
-    email: 'contact@medfacilities.ng',
-    phone: '+234 802 345 6789',
-    contact: 'Sarah Okafor',
-    specialization: 'Healthcare Infrastructure',
-    rating: 4.5,
-    status: 'Active',
-    projects: { completed: 8, ongoing: 1 },
-    location: 'Abuja',
-    joinDate: '2020-11-20',
-    totalValue: '₦3.2B'
-  },
-  {
-    id: 'CON-003',
-    name: 'Aqua Systems Ltd',
-    email: 'info@aquasystems.com',
-    phone: '+234 803 456 7890',
-    contact: 'Michael Ade',
-    specialization: 'Water Infrastructure',
-    rating: 4.2,
-    status: 'Active',
-    projects: { completed: 5, ongoing: 2 },
-    location: 'Port Harcourt',
-    joinDate: '2022-01-10',
-    totalValue: '₦2.8B'
-  },
-  {
-    id: 'CON-004',
-    name: 'Road Masters Nigeria',
-    email: 'info@roadmasters.ng',
-    phone: '+234 804 567 8901',
-    contact: 'Funke Akindele',
-    specialization: 'Road Construction',
-    rating: 4.7,
-    status: 'Active',
-    projects: { completed: 15, ongoing: 2 },
-    location: 'Kano',
-    joinDate: '2019-08-05',
-    totalValue: '₦6.1B'
-  },
-  {
-    id: 'CON-005',
-    name: 'Coastal Developers Ltd',
-    email: 'contact@coastaldev.com',
-    phone: '+234 805 678 9012',
-    contact: 'John Obi',
-    specialization: 'Marine Infrastructure',
-    rating: 4.0,
-    status: 'Inactive',
-    projects: { completed: 3, ongoing: 0 },
-    location: 'Umuahia',
-    joinDate: '2023-02-28',
-    totalValue: '₦1.5B'
-  }
-];
 
 const specializationOptions = ['All Specializations', 'Road Construction', 'Healthcare Infrastructure', 'Water Infrastructure', 'Marine Infrastructure'];
 const statusOptions = ['All Statuses', 'Active', 'Inactive'];
@@ -100,10 +31,27 @@ const statusStyles = {
 };
 
 export default function Contractors() {
+  const { contractors } = useContractors();
   const [searchTerm, setSearchTerm] = useState('');
   const [specializationFilter, setSpecializationFilter] = useState('All Specializations');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedContractor, setSelectedContractor] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Debug logging
+  console.log('Contractors page - contractors from context:', contractors);
+  console.log('Contractors page - contractors count:', contractors.length);
+
+  const handleViewDetails = (contractor) => {
+    setSelectedContractor(contractor);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedContractor(null);
+    setShowDetailModal(false);
+  };
 
   const filteredContractors = contractors.filter(contractor => {
     const matchesSearch = contractor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -296,12 +244,13 @@ export default function Contractors() {
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-2">
-                      <Link
-                        to={`/contractors/${contractor.id}`}
+                      <button
+                        onClick={() => handleViewDetails(contractor)}
                         className="text-abia-600 hover:text-abia-700 p-1 rounded"
+                        title="View Details"
                       >
                         <Eye className="h-4 w-4" />
-                      </Link>
+                      </button>
                       <button className="text-gray-400 hover:text-gray-600 p-1 rounded">
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
@@ -360,13 +309,13 @@ export default function Contractors() {
               </div>
               
               <div className="flex justify-end">
-                <Link
-                  to={`/contractors/${contractor.id}`}
+                <button
+                  onClick={() => handleViewDetails(contractor)}
                   className="text-abia-600 hover:text-abia-700 text-sm font-medium flex items-center"
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   View Details
-                </Link>
+                </button>
               </div>
             </div>
           ))}
@@ -386,6 +335,16 @@ export default function Contractors() {
           </div>
         )}
       </div>
+      
+      {/* Debug Component - Remove in production */}
+      <ContractorDebug />
+      
+      {/* Contractor Detail Modal */}
+      <ContractorDetailModal
+        contractor={selectedContractor}
+        isOpen={showDetailModal}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

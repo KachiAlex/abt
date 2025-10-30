@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import ReportDetailModal from '../components/Reports/ReportDetailModal';
 
 // Enhanced mock data for M&E dashboard
 const pendingApprovals = [
@@ -110,6 +111,66 @@ const pendingApprovals = [
     estimatedValue: '₦0',
     qualityScore: 4.7,
     safetyCompliance: 'Excellent',
+    weatherImpact: 'None'
+  },
+  {
+    id: 'SUB-005',
+    type: 'progress',
+    title: 'Q1 2024 Performance Report',
+    project: 'Industrial Complex Development',
+    projectId: 'PRJ-2024-001',
+    contractor: 'Test Industry Ltd',
+    submittedDate: '2024-01-15',
+    submittedBy: 'David Chen',
+    description: 'Quarterly performance report covering project milestones, budget utilization, and quality metrics. All targets exceeded.',
+    progress: 90,
+    mediaCount: 25,
+    priority: 'High',
+    dueDate: '2024-01-20',
+    location: 'Industrial Zone, Umuahia',
+    estimatedValue: '₦2.5B',
+    qualityScore: 4.9,
+    safetyCompliance: 'Outstanding',
+    weatherImpact: 'None'
+  },
+  {
+    id: 'SUB-006',
+    type: 'milestone',
+    title: 'Phase 3: Manufacturing Facility Completion',
+    project: 'Advanced Manufacturing Hub',
+    projectId: 'PRJ-2024-002',
+    contractor: 'Test Industry Ltd',
+    submittedDate: '2024-01-12',
+    submittedBy: 'Lisa Wang',
+    description: 'State-of-the-art manufacturing facility completed ahead of schedule. All equipment installed and tested successfully.',
+    progress: 100,
+    mediaCount: 18,
+    priority: 'High',
+    dueDate: '2024-01-15',
+    location: 'Industrial Zone, Aba',
+    estimatedValue: '₦3.2B',
+    qualityScore: 4.8,
+    safetyCompliance: 'Excellent',
+    weatherImpact: 'None'
+  },
+  {
+    id: 'SUB-007',
+    type: 'safety',
+    title: 'Annual Safety Compliance Report',
+    project: 'Test Industry Expansion Project',
+    projectId: 'PRJ-2024-003',
+    contractor: 'Test Industry Ltd',
+    submittedDate: '2024-01-10',
+    submittedBy: 'Robert Kim',
+    description: 'Comprehensive annual safety audit covering all facilities. Zero incidents recorded. Industry-leading safety standards maintained.',
+    progress: 95,
+    mediaCount: 30,
+    priority: 'Medium',
+    dueDate: '2024-01-25',
+    location: 'Multiple Sites',
+    estimatedValue: '₦0',
+    qualityScore: 5.0,
+    safetyCompliance: 'Outstanding',
     weatherImpact: 'None'
   }
 ];
@@ -238,6 +299,8 @@ export default function MEDashboard() {
   const [activeTab, setActiveTab] = useState('pending');
   const [showInspectionModal, setShowInspectionModal] = useState(false);
   const [viewMode, setViewMode] = useState('week'); // week or month
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const filteredSubmissions = pendingApprovals.filter(submission => {
     const matchesSearch = submission.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -262,6 +325,16 @@ export default function MEDashboard() {
   const handleFlag = (submissionId) => {
     console.log('Flagging submission:', submissionId);
     // In real app, this would make an API call
+  };
+
+  const handleViewReport = (report) => {
+    setSelectedReport(report);
+    setShowReportModal(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setSelectedReport(null);
+    setShowReportModal(false);
   };
 
   const currentMetrics = viewMode === 'week' ? performanceMetrics.thisWeek : performanceMetrics.thisMonth;
@@ -584,11 +657,11 @@ export default function MEDashboard() {
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => setSelectedSubmission(submission)}
+                          onClick={() => handleViewReport(submission)}
                           className="text-abia-600 hover:text-abia-700 text-sm font-medium flex items-center px-3 py-1 rounded-lg hover:bg-abia-50"
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          Review
+                          View Report
                         </button>
                         <button
                           onClick={() => handleApprove(submission.id)}
@@ -946,6 +1019,13 @@ export default function MEDashboard() {
           </div>
         </div>
       )}
+
+      {/* Report Detail Modal */}
+      <ReportDetailModal
+        report={selectedReport}
+        isOpen={showReportModal}
+        onClose={handleCloseReportModal}
+      />
     </div>
   );
 }

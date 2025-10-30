@@ -6,22 +6,54 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  Activity
+  Activity,
+  BarChart3
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { dashboardAPI } from '../services/api';
 import StatsCard from '../components/Dashboard/StatsCard';
 import ProjectStatusChart from '../components/Dashboard/ProjectStatusChart';
 import RecentProjects from '../components/Dashboard/RecentProjects';
 
 export default function Dashboard() {
+  const { canAccessAdminFeatures, hasRole, user } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const handleAddProject = () => {
+    console.log('Navigating to /projects/new');
+    console.log('User:', user);
+    console.log('Can access admin features:', canAccessAdminFeatures());
+    navigate('/projects/new');
+  };
+  
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const res = await dashboardAPI.getStats();
+        if (res?.success && isMounted) setStats(res.data?.stats || null);
+      } catch (e) {
+        if (isMounted) setError(e.message || 'Failed to load stats');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { isMounted = false; };
+  }, []);
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Projects"
-          value="324"
-          subtitle="+12 from last month"
+          value={stats ? String(stats.total) : (loading ? '...' : '0')}
+          subtitle={error ? 'Error loading' : '+12 from last month'}
           icon={FolderOpen}
           trend="up"
           trendValue="+12"
@@ -29,7 +61,7 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Active Projects"
-          value="145"
+          value={stats ? String((stats.byStatus?.IN_PROGRESS || 0)) : (loading ? '...' : '0')}
           subtitle="45% of total projects"
           icon={Activity}
           trend="up"
@@ -38,7 +70,7 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Total Budget"
-          value="₦1.2B"
+          value={stats ? `₦${(stats.totalBudget || 0).toLocaleString()}` : (loading ? '...' : '₦0')}
           subtitle="₦450M allocated this quarter"
           icon={DollarSign}
           trend="up"
@@ -47,7 +79,7 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Completion Rate"
-          value="78%"
+          value={stats ? `${Math.round(stats.averageProgress || 0)}%` : (loading ? '...' : '0%')}
           subtitle="+4% from last month"
           icon={TrendingUp}
           trend="up"
@@ -74,17 +106,34 @@ export default function Dashboard() {
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
             <div className="space-y-3">
-              <Link to="/projects/new" className="w-full btn-primary flex items-center justify-center space-x-2">
+              {canAccessAdminFeatures() && (
+                <button 
+                  onClick={handleAddProject}
+                  className="w-full btn-primary flex items-center justify-center space-x-2"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span>Add New Project</span>
+                </button>
+              )}
+              {hasRole('ME_OFFICER') && (
+                <Link to="/me/dashboard" className="w-full btn-secondary flex items-center justify-center space-x-2">
+                  <Users className="h-4 w-4" />
+                  <span>Review Contractor Updates</span>
+                </Link>
+              )}
+              {hasRole(['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER', 'ME_OFFICER']) && (
+                <Link to="/reports" className="w-full btn-secondary flex items-center justify-center space-x-2">
+                  <TrendingUp className="h-4 w-4" />
+                  <span>Export Reports</span>
+                </Link>
+              )}
+              <Link to="/projects" className="w-full btn-secondary flex items-center justify-center space-x-2">
                 <FolderOpen className="h-4 w-4" />
-                <span>Add New Project</span>
+                <span>View All Projects</span>
               </Link>
-              <Link to="/me/dashboard" className="w-full btn-secondary flex items-center justify-center space-x-2">
-                <Users className="h-4 w-4" />
-                <span>Review Contractor Updates</span>
-              </Link>
-              <Link to="/reports" className="w-full btn-secondary flex items-center justify-center space-x-2">
-                <TrendingUp className="h-4 w-4" />
-                <span>Export Reports</span>
+              <Link to="/analytics" className="w-full btn-secondary flex items-center justify-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>View Analytics</span>
               </Link>
             </div>
           </div>

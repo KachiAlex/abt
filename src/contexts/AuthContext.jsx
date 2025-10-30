@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import PageLoader from '../components/Loading/PageLoader';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -17,37 +19,70 @@ export const AuthProvider = ({ children }) => {
 
   // Check for existing auth on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const checkAuth = () => {
       try {
-        const authData = localStorage.getItem('abt_auth');
+        const authData = localStorage.getItem('gpt_auth');
         if (authData) {
           const parsed = JSON.parse(authData);
           console.log('Loading cached auth data:', parsed); // Debug log
-          setUser(parsed.user);
-          setToken(parsed.token);
+          if (isMounted) {
+            setUser(parsed.user);
+            setToken(parsed.token);
+          }
         }
       } catch (error) {
         console.error('Error parsing auth data:', error);
-        localStorage.removeItem('abt_auth');
+        localStorage.removeItem('gpt_auth');
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkAuth();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const signIn = (authData) => {
-    console.log('Signing in with data:', authData); // Debug log
+  const signIn = async (credentials) => {
+    try {
+      console.log('Attempting to sign in with:', credentials.email);
+      const response = await authAPI.login(credentials);
+      
+      if (response.success) {
+        const authData = response.data;
+        console.log('Login successful:', authData);
+        setUser(authData.user);
+        setToken(authData.token);
+        localStorage.setItem('gpt_auth', JSON.stringify(authData));
+        return { success: true, data: authData };
+      } else {
+        console.error('Login failed:', response.message);
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, message: error.message || 'Login failed' };
+    }
+  };
+
+  const signInWithMockData = (authData) => {
+    console.log('Signing in with mock data:', authData);
     setUser(authData.user);
     setToken(authData.token);
-    localStorage.setItem('abt_auth', JSON.stringify(authData));
+    localStorage.setItem('gpt_auth', JSON.stringify(authData));
   };
 
   const signOut = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('abt_auth');
+    localStorage.removeItem('gpt_auth');
   };
 
   const updateUser = (userData) => {
@@ -55,7 +90,7 @@ export const AuthProvider = ({ children }) => {
     console.log('Updating user from:', user, 'to:', updatedUser); // Debug log
     setUser(updatedUser);
     const authData = { user: updatedUser, token };
-    localStorage.setItem('abt_auth', JSON.stringify(authData));
+    localStorage.setItem('gpt_auth', JSON.stringify(authData));
   };
 
   const isAuthenticated = () => {
@@ -91,6 +126,7 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     signIn,
+    signInWithMockData,
     signOut,
     updateUser,
     isAuthenticated,
@@ -100,6 +136,10 @@ export const AuthProvider = ({ children }) => {
     isMEOfficer,
     canAccessAdminFeatures,
   };
+
+  if (loading) {
+    return <PageLoader text="Initializing..." />;
+  }
 
   return (
     <AuthContext.Provider value={value}>

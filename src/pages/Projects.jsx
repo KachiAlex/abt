@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Plus, 
   Search, 
@@ -13,53 +13,17 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import { projectAPI } from '../services/api';
 
-const projects = [
-  {
-    id: 'PRJ-2023-001',
-    name: 'Aba-Umuahia Expressway Expansion',
-    lga: 'Aba North',
-    contractor: 'Abia Infrastructure Ltd',
-    timeline: '1/15/2023 to 6/30/2024',
-    budget: '₦1.2B',
-    status: 'In Progress',
-    progress: 65,
-    lastUpdate: '2 days ago'
-  },
-  {
-    id: 'PRJ-2023-002',
-    name: 'Umuahia General Hospital Upgrade',
-    lga: 'Umuahia North',
-    contractor: 'Medical Facilities Nigeria',
-    timeline: '11/10/2022 to 9/30/2023',
-    budget: '₦450M',
-    status: 'Completed',
-    progress: 100,
-    lastUpdate: '1 week ago'
-  },
-  {
-    id: 'PRJ-2023-003',
-    name: 'Aba South Water Treatment Plant',
-    lga: 'Aba South',
-    contractor: 'Aqua Systems Ltd',
-    timeline: '2/20/2023 to 2/20/2024',
-    budget: '₦780M',
-    status: 'Delayed',
-    progress: 30,
-    lastUpdate: '3 days ago'
-  },
-  {
-    id: 'PRJ-2023-004',
-    name: 'Arochukwu Road Rehabilitation',
-    lga: 'Arochukwu',
-    contractor: 'Road Masters Nigeria',
-    timeline: '3/5/2023 to 12/15/2023',
-    budget: '₦650M',
-    status: 'In Progress',
-    progress: 45,
-    lastUpdate: 'Yesterday'
-  }
-];
+const statusMap = {
+  NOT_STARTED: 'Not Started',
+  IN_PROGRESS: 'In Progress',
+  NEAR_COMPLETION: 'Near Completion',
+  COMPLETED: 'Completed',
+  DELAYED: 'Delayed',
+  ON_HOLD: 'On Hold',
+  CANCELLED: 'Cancelled',
+};
 
 const statusOptions = ['All Statuses', 'In Progress', 'Completed', 'Delayed', 'Not Started'];
 const lgaOptions = ['All LGAs', 'Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'];
@@ -76,6 +40,27 @@ export default function Projects() {
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [lgaFilter, setLgaFilter] = useState('All LGAs');
   const [showFilters, setShowFilters] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const res = await projectAPI.getAll();
+        if (res?.success && isMounted) {
+          setProjects(res.data?.projects || []);
+        }
+      } catch (e) {
+        if (isMounted) setError(e.message || 'Failed to load projects');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { isMounted = false; };
+  }, []);
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

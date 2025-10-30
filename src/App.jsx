@@ -2,7 +2,9 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
+import { ContractorsProvider } from './contexts/ContractorsContext';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -10,6 +12,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import ProjectNew from './pages/ProjectNew';
 import Contractors from './pages/Contractors';
 import ContractorDashboard from './pages/ContractorDashboard';
+import ContractorNew from './pages/ContractorNew';
 import MEDashboard from './pages/MEDashboard';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
@@ -27,6 +30,7 @@ function AppContent() {
     if (location.pathname === '/projects') return 'Projects';
     if (location.pathname.startsWith('/projects/')) return 'Project Details';
     if (location.pathname === '/contractors') return 'Contractors';
+    if (location.pathname === '/contractors/new') return 'Add New Contractor';
     if (location.pathname === '/contractor/dashboard') return 'Contractor Dashboard';
     if (location.pathname === '/me/dashboard') return 'M&E Dashboard';
     if (location.pathname === '/public') return 'Public Portal';
@@ -83,6 +87,11 @@ function AppContent() {
                 <Contractors />
               </ProtectedRoute>
             } />
+            <Route path="/contractors/new" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN']}>
+                <ContractorNew />
+              </ProtectedRoute>
+            } />
             <Route path="/contractor/dashboard" element={
               <ProtectedRoute roles={['CONTRACTOR']}>
                 <ContractorDashboard />
@@ -127,11 +136,15 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-      <AppContent />
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <ContractorsProvider>
+            <AppContent />
+          </ContractorsProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

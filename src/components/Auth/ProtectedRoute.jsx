@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children, roles = [] }) {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-16 h-16 bg-abia-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-abia-600 font-bold text-xl">APT</span>
+            <span className="text-abia-600 font-bold text-xl">GPT</span>
           </div>
           <p className="text-gray-600">Loading...</p>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -16,7 +16,9 @@ import {
   Edit,
   Download,
   Upload,
-  MessageSquare
+  MessageSquare,
+  X,
+  Save
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -131,7 +133,47 @@ const updateTypeColors = {
 
 export default function ProjectDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+
+  const handleEditProject = () => {
+    console.log('Editing project:', id);
+    // Initialize form data with current project data
+    const project = projectData[id];
+    if (project) {
+      setEditFormData({
+        name: project.name,
+        description: project.description,
+        lga: project.lga,
+        budget: project.budget.total.replace('₦', '').replace(/,/g, ''),
+        status: project.status,
+        progress: project.progress
+      });
+    }
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false);
+    setEditFormData({});
+  };
+
+  const handleSaveProject = () => {
+    console.log('Saving project changes:', editFormData);
+    // Here you would typically make an API call to save the changes
+    alert('Project updated successfully!');
+    setIsEditModalOpen(false);
+    setEditFormData({});
+  };
+
+  const handleInputChange = (field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
   const project = projectData[id];
 
   if (!project) {
@@ -170,7 +212,10 @@ export default function ProjectDetail() {
             <Download className="h-4 w-4" />
             <span>Export Report</span>
           </button>
-          <button className="btn-primary flex items-center space-x-2">
+          <button 
+            onClick={handleEditProject}
+            className="btn-primary flex items-center space-x-2"
+          >
             <Edit className="h-4 w-4" />
             <span>Edit Project</span>
           </button>
@@ -638,6 +683,140 @@ export default function ProjectDetail() {
           </div>
         )}
       </div>
+
+      {/* Edit Project Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Project</h2>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Project Name */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Project Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.name || ''}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={editFormData.description || ''}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  {/* LGA */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      LGA
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.lga || ''}
+                      onChange={(e) => handleInputChange('lga', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Budget */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Budget (₦)
+                    </label>
+                    <input
+                      type="number"
+                      value={editFormData.budget || ''}
+                      onChange={(e) => handleInputChange('budget', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={editFormData.status || ''}
+                      onChange={(e) => handleInputChange('status', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="Not Started">Not Started</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Near Completion">Near Completion</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Delayed">Delayed</option>
+                      <option value="On Hold">On Hold</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  {/* Progress */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Progress (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={editFormData.progress || ''}
+                      onChange={(e) => handleInputChange('progress', parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors flex items-center space-x-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

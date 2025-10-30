@@ -26,7 +26,7 @@ export default function Home() {
       id: 'government',
       name: 'Government',
       icon: Building,
-      description: 'Access the government official dashboard to manage all projects across Abia State',
+      description: 'Access the government official dashboard to manage all projects across government departments',
       features: ['Project Overview', 'Budget Tracking', 'Performance Analytics', 'Report Generation'],
       route: '/dashboard',
       color: 'bg-abia-600 hover:bg-abia-700'
@@ -89,10 +89,10 @@ export default function Home() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-abia-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">APT</span>
+                <span className="text-white font-bold text-sm">GPT</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Abia Project Tracker</h1>
+                <h1 className="text-xl font-bold text-gray-900">Government Project Tracker</h1>
                 <p className="text-sm text-gray-600 hidden sm:block">Digital Accountability Platform</p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export default function Home() {
               </Link>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <Phone className="h-4 w-4" />
-                <span className="hidden sm:inline">+234 800 ABIA GOV</span>
+                <span className="hidden sm:inline">+234 800 GOV HEL</span>
               </div>
             </div>
           </div>
@@ -116,14 +116,14 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center py-16">
           <div className="w-20 h-20 bg-abia-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-abia-600 font-bold text-2xl">APT</span>
+            <span className="text-abia-600 font-bold text-2xl">GPT</span>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Welcome to Abia Project Tracker
+            Welcome to Government Project Tracker
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Enhancing Transparency, Accountability & Public Trust in Governance across Abia State
+            Enhancing Transparency, Accountability & Public Trust in Government Projects
           </p>
           
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto mb-8">
@@ -280,15 +280,15 @@ export default function Home() {
             <div className="col-span-2">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-10 h-10 bg-abia-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">APT</span>
+                  <span className="text-white font-bold text-sm">GPT</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold">Abia Project Tracker</h3>
+                  <h3 className="text-lg font-bold">Government Project Tracker</h3>
                   <p className="text-gray-400 text-sm">Digital Accountability Platform</p>
                 </div>
               </div>
               <p className="text-gray-400 mb-4">
-                Enhancing transparency, accountability, and public trust in governance across Abia State, Nigeria.
+                Enhancing transparency, accountability, and public trust in government project management and delivery.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white">
@@ -316,17 +316,17 @@ export default function Home() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Contact</h4>
               <div className="space-y-2 text-sm text-gray-400">
-                <p>Abia State Government</p>
-                <p>Government House, Umuahia</p>
-                <p>Phone: +234 800 ABIA GOV</p>
-                <p>Email: info@abiastate.gov.ng</p>
+                <p>Government Project Office</p>
+                <p>Government Secretariat</p>
+                <p>Phone: +234 800 GOV HEL</p>
+                <p>Email: info@gpt-system.gov</p>
               </div>
             </div>
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-sm text-gray-400">
-              © 2025 Abia State Government. All rights reserved. | Powered by Kreatix Technologies
+              © 2025 Government Project Tracker. All rights reserved. | Powered by Kreatix Technologies
             </p>
           </div>
         </div>

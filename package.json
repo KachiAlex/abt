@@ -1,9 +1,9 @@
 {
-  "name": "abia-project-tracker",
+  "name": "government-project-tracker",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Abia Project Tracker (APT) - Digital accountability platform for government project transparency",
+  "description": "Government Project Tracker (GPT) - Digital accountability platform for government project transparency",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -14,6 +14,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.1.1",
+    "react-hot-toast": "^2.4.1",
     "lucide-react": "^0.468.0",
     "recharts": "^2.13.3",
     "date-fns": "^4.1.0",

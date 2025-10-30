@@ -12,6 +12,9 @@ import {
   Shield
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { showError, showSuccess } from '../../utils/toast';
+import { authAPI } from '../../services/api';
 
 const roleInfo = {
   GOVERNMENT_ADMIN: {
@@ -40,7 +43,9 @@ const roleInfo = {
   }
 };
 
-export default function SignInModal({ isOpen, onClose, onSignIn }) {
+export default function SignInModal({ isOpen, onClose }) {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -49,7 +54,6 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
-  const navigate = useNavigate();
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -66,75 +70,24 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
     setError('');
 
     try {
-      // In demo mode, simulate authentication
-      if (formData.email && formData.password) {
-        // Demo credentials for different roles
-        const demoCredentials = {
-          'admin@abiastate.gov.ng': { 
-            role: 'GOVERNMENT_ADMIN', 
-            firstName: 'Chinedu', 
-            lastName: 'Okafor',
-            jobTitle: 'Chief of Staff',
-            department: 'Office of the Governor'
-          },
-          'officer@abiastate.gov.ng': { 
-            role: 'GOVERNMENT_OFFICER', 
-            firstName: 'Ngozi', 
-            lastName: 'Eze',
-            jobTitle: 'Project Coordinator',
-            department: 'Ministry of Works'
-          },
-          'contractor@abiainfra.com': { 
-            role: 'CONTRACTOR', 
-            firstName: 'Emeka', 
-            lastName: 'Nwankwo',
-            jobTitle: 'Project Manager',
-            department: 'Abia Infrastructure Ltd'
-          },
-          'me@abiastate.gov.ng': { 
-            role: 'ME_OFFICER', 
-            firstName: 'Chioma', 
-            lastName: 'Okoro',
-            jobTitle: 'Senior M&E Officer',
-            department: 'Project Monitoring Unit'
-          }
-        };
-
-        const userInfo = demoCredentials[formData.email];
-        
-        if (userInfo && formData.password === 'demo123') {
-          // Simulate successful login
-          const authData = {
-            user: {
-              id: `user-${Date.now()}`,
-              email: formData.email,
-              firstName: userInfo.firstName,
-              lastName: userInfo.lastName,
-              role: userInfo.role,
-              jobTitle: userInfo.jobTitle,
-              department: userInfo.department,
-              phone: '+234 803 123 4567',
-              city: 'Umuahia',
-              state: 'Abia State'
-            },
-            token: 'demo-jwt-token'
-          };
-
-          // Store auth data in localStorage (demo purposes)
-          localStorage.setItem('abt_auth', JSON.stringify(authData));
-          
-          onSignIn(authData);
-          onClose();
-          
-          // Navigate to appropriate dashboard
-          const roleData = roleInfo[userInfo.role];
-          navigate(roleData.redirectTo);
-        } else {
-          setError('Invalid credentials. Use demo credentials provided below.');
-        }
-      } else {
+      if (!formData.email || !formData.password) {
         setError('Please enter both email and password');
+        return;
       }
+
+      const result = await signIn({ email: formData.email, password: formData.password });
+      if (!result.success) {
+        const msg = result.message || 'Login failed';
+        setError(msg);
+        showError(msg);
+        return;
+      }
+
+      onClose();
+      const role = result.data.user.role;
+      const roleData = roleInfo[role];
+      navigate(roleData?.redirectTo || '/dashboard');
+      showSuccess('Logged in successfully');
     } catch (err) {
       setError('An error occurred during sign in. Please try again.');
     } finally {
@@ -162,14 +115,14 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
             </button>
           </div>
 
-          {/* Demo Notice */}
+          {/* Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex items-start space-x-3">
               <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-blue-900">Demo Mode</h4>
+                <h4 className="text-sm font-medium text-blue-900">Sign in</h4>
                 <p className="text-sm text-blue-700 mt-1">
-                  This is a demonstration. In production, only administrators can create user accounts.
+                  Use your email and password provided by the administrator.
                 </p>
               </div>
             </div>
@@ -237,52 +190,7 @@ export default function SignInModal({ isOpen, onClose, onSignIn }) {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-8 border-t border-gray-200 pt-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-4">Demo Credentials</h4>
-            <div className="space-y-3">
-              {Object.entries(roleInfo).map(([role, info]) => {
-                const Icon = info.icon;
-                return (
-                  <div key={role} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <div className="w-8 h-8 bg-abia-100 rounded-lg flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-abia-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{info.name}</p>
-                        <p className="text-xs text-gray-600">{info.description}</p>
-                      </div>
-                    </div>
-                    <div className="ml-11 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">Email:</span>
-                        <code className="text-xs bg-white px-2 py-1 rounded border">
-                          {role === 'GOVERNMENT_ADMIN' ? 'admin@abiastate.gov.ng' :
-                           role === 'GOVERNMENT_OFFICER' ? 'officer@abiastate.gov.ng' :
-                           role === 'CONTRACTOR' ? 'contractor@abiainfra.com' :
-                           'me@abiastate.gov.ng'}
-                        </code>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">Password:</span>
-                        <code className="text-xs bg-white px-2 py-1 rounded border">demo123</code>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">User:</span>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {role === 'GOVERNMENT_ADMIN' ? 'Chinedu Okafor' :
-                           role === 'GOVERNMENT_OFFICER' ? 'Ngozi Eze' :
-                           role === 'CONTRACTOR' ? 'Emeka Nwankwo' :
-                           'Chioma Okoro'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          
 
           {/* Footer */}
           <div className="mt-6 text-center">

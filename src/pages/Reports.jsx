@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import ReportDetailModal from '../components/Reports/ReportDetailModal';
 
 // Mock data for reports
 const reports = [
@@ -70,6 +71,45 @@ const reports = [
     pages: 95,
     size: '5.2 MB',
     downloads: 234
+  },
+  {
+    id: 'RPT-2024-005',
+    title: 'Test Industry Ltd - Q1 2024 Performance Report',
+    type: 'Quarterly',
+    category: 'Performance',
+    generatedDate: '2024-01-20',
+    generatedBy: 'Test Industry Ltd',
+    status: 'Published',
+    projects: 12,
+    pages: 28,
+    size: '1.5 MB',
+    downloads: 67
+  },
+  {
+    id: 'RPT-2024-006',
+    title: 'Test Industry Ltd - Infrastructure Progress Report',
+    type: 'Monthly',
+    category: 'Progress',
+    generatedDate: '2024-01-15',
+    generatedBy: 'Test Industry Ltd',
+    status: 'Published',
+    projects: 8,
+    pages: 22,
+    size: '1.2 MB',
+    downloads: 43
+  },
+  {
+    id: 'RPT-2024-007',
+    title: 'Test Industry Ltd - Safety Compliance Report',
+    type: 'Monthly',
+    category: 'Safety',
+    generatedDate: '2024-01-10',
+    generatedBy: 'Test Industry Ltd',
+    status: 'Published',
+    projects: 15,
+    pages: 18,
+    size: '0.9 MB',
+    downloads: 34
   }
 ];
 
@@ -96,6 +136,8 @@ export default function Reports() {
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,6 +148,16 @@ export default function Reports() {
     
     return matchesSearch && matchesType && matchesCategory && matchesStatus;
   });
+
+  const handleViewReport = (report) => {
+    setSelectedReport(report);
+    setShowReportModal(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setShowReportModal(false);
+    setSelectedReport(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -269,10 +321,17 @@ export default function Reports() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-                    <button className="text-abia-600 hover:text-abia-700 p-2 rounded-lg hover:bg-abia-50">
+                    <button 
+                      onClick={() => handleViewReport(report)}
+                      className="text-abia-600 hover:text-abia-700 p-2 rounded-lg hover:bg-abia-50"
+                      title="View Report Details"
+                    >
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50">
+                    <button 
+                      className="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50"
+                      title="Download Report"
+                    >
                       <Download className="h-4 w-4" />
                     </button>
                   </div>
@@ -376,6 +435,14 @@ export default function Reports() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Report Detail Modal */}
+      {showReportModal && selectedReport && (
+        <ReportDetailModal
+          report={selectedReport}
+          onClose={handleCloseReportModal}
+        />
       )}
     </div>
   );
