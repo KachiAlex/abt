@@ -142,8 +142,8 @@ function App() {
     if (authData) {
       try {
         const parsed = JSON.parse(authData);
-        // If token exists but is invalid, clear it
-        if (parsed.token && (!parsed.user || !parsed.user.role)) {
+        // Clear tokens that look suspicious or incomplete
+        if (parsed.token && (!parsed.user || !parsed.user.role || !parsed.user.email)) {
           console.log('Clearing invalid auth data');
           localStorage.removeItem('gpt_auth');
         }
