@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -17,9 +17,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import { publicAPI } from '../services/api';
 
 // Mock data for public portal
-const publicProjects = [
+const oldPublicProjects = [
   {
     id: 'PRJ-2023-001',
     name: 'Aba-Umuahia Expressway Expansion',
@@ -74,10 +75,10 @@ const categories = ['All Categories', 'Transportation', 'Healthcare', 'Water & S
 const lgas = ['All LGAs', 'Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'];
 
 const statusStyles = {
-  'Completed': 'status-completed',
-  'In Progress': 'status-in-progress',
-  'Delayed': 'status-delayed',
-  'Not Started': 'status-not-started'
+  'COMPLETED': 'status-completed',
+  'IN_PROGRESS': 'status-in-progress',
+  'DELAYED': 'status-delayed',
+  'NOT_STARTED': 'status-not-started'
 };
 
 export default function PublicPortal() {
@@ -85,22 +86,47 @@ export default function PublicPortal() {
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
   const [lgaFilter, setLgaFilter] = useState('All LGAs');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, active: 0, completed: 0, totalBudget: 0 });
 
-  const filteredProjects = publicProjects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'All Categories' || project.category === categoryFilter;
-    const matchesLGA = lgaFilter === 'All LGAs' || project.lga === lgaFilter;
-    
-    return matchesSearch && matchesCategory && matchesLGA;
+  useEffect(() => {
+    let isMounted = true;
+    const loadProjects = async () => {
+      try {
+        const filters = {};
+        if (categoryFilter !== 'All Categories') {
+          filters.category = categoryFilter.toUpperCase().replace(' ', '_');
+        }
+        if (lgaFilter !== 'All LGAs') {
+          filters.lga = lgaFilter;
+        }
+        const res = await publicAPI.getProjects(filters);
+        if (res?.success && isMounted) {
+          setProjects(res.data?.projects || []);
+          // Calculate stats
+          const allProjects = res.data?.projects || [];
+          const totalBudget = allProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
+          const active = allProjects.filter(p => p.status === 'IN_PROGRESS').length;
+          const completed = allProjects.filter(p => p.status === 'COMPLETED').length;
+          setStats({ total: allProjects.length, active, completed, totalBudget });
+        }
+      } catch (e) {
+        console.error('Failed to load public projects:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    loadProjects();
+    return () => { isMounted = false; };
+  }, [categoryFilter, lgaFilter]);
+
+  const filteredProjects = projects.filter(project => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return project.name.toLowerCase().includes(searchLower) ||
+           project.description.toLowerCase().includes(searchLower);
   });
-
-  const totalBudget = publicProjects.reduce((sum, project) => {
-    return sum + parseFloat(project.budget.replace('₦', '').replace('B', '000000000').replace('M', '000000'));
-  }, 0);
-
-  const completedProjects = publicProjects.filter(p => p.status === 'Completed').length;
-  const activeProjects = publicProjects.filter(p => p.status === 'In Progress').length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -146,21 +172,21 @@ export default function PublicPortal() {
               <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-3">
                 <Building className="h-6 w-6 text-blue-600" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">{publicProjects.length}</p>
-              <p className="text-gray-600">Active Projects</p>
+              <p className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.total}</p>
+              <p className="text-gray-600">Total Projects</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mx-auto mb-3">
                 <Award className="h-6 w-6 text-green-600" />
               </div>
-              <p className="text-3xl font-bold text-green-600">{completedProjects}</p>
+              <p className="text-3xl font-bold text-green-600">{loading ? '...' : stats.completed}</p>
               <p className="text-gray-600">Completed</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mx-auto mb-3">
                 <DollarSign className="h-6 w-6 text-purple-600" />
               </div>
-              <p className="text-3xl font-bold text-purple-600">₦2.4B</p>
+              <p className="text-3xl font-bold text-purple-600">{loading ? '...' : `₦${(stats.totalBudget / 1000000000).toFixed(1)}B`}</p>
               <p className="text-gray-600">Total Investment</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -215,60 +241,65 @@ export default function PublicPortal() {
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
-          {filteredProjects.map((project) => (
-            <div key={project.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
-              <div className="h-48 bg-gray-200 flex items-center justify-center">
-                <Building className="h-16 w-16 text-gray-400" />
-              </div>
-              
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-1">{project.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{project.category} • {project.lga}</p>
-                  </div>
-                  <span className={clsx('status-badge ml-2', statusStyles[project.status])}>
-                    {project.status}
-                  </span>
+          {loading ? (
+            <div className="col-span-3 text-center py-12 text-gray-500">Loading...</div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="col-span-3 text-center py-12 text-gray-500">No projects found</div>
+          ) : (
+            filteredProjects.map((project) => (
+              <div key={project.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
+                <div className="h-48 bg-gray-200 flex items-center justify-center">
+                  <Building className="h-16 w-16 text-gray-400" />
                 </div>
+                
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">{project.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{project.category} • {project.lga}</p>
+                    </div>
+                    <span className={clsx('status-badge ml-2', statusStyles[project.status])}>
+                      {project.status}
+                    </span>
+                  </div>
 
-                <p className="text-sm text-gray-700 mb-4 line-clamp-2">{project.description}</p>
+                  <p className="text-sm text-gray-700 mb-4 line-clamp-2">{project.description}</p>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="font-semibold">{project.progress}%</span>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Progress</span>
+                      <span className="font-semibold">{project.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={clsx(
+                          'h-2 rounded-full',
+                          project.status === 'COMPLETED' ? 'bg-green-500' :
+                          project.status === 'DELAYED' ? 'bg-red-500' : 'bg-abia-600'
+                        )}
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={clsx(
-                        'h-2 rounded-full',
-                        project.status === 'Completed' ? 'bg-green-500' :
-                        project.status === 'Delayed' ? 'bg-red-500' : 'bg-abia-600'
-                      )}
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center">
-                    <DollarSign className="h-3 w-3 mr-1" />
-                    {project.budget}
+                  <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 mb-4">
+                    <div className="flex items-center">
+                      <DollarSign className="h-3 w-3 mr-1" />
+                      ₦{(project.budget || 0).toLocaleString()}
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="h-3 w-3 mr-1" />
+                      {project.beneficiaries || 'N/A'}
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {project.expectedEndDate ? new Date(project.expectedEndDate.toDate()).toLocaleDateString() : 'N/A'}
+                    </div>
+                    <div className="flex items-center">
+                      <Building className="h-3 w-3 mr-1" />
+                      {project.contractor?.companyName || 'N/A'}
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
-                    {project.beneficiaries}
-                  </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {new Date(project.expectedCompletion).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center">
-                    <Building className="h-3 w-3 mr-1" />
-                    {project.contractor}
-                  </div>
-                </div>
 
                 <button
                   onClick={() => setSelectedProject(project)}
@@ -279,8 +310,9 @@ export default function PublicPortal() {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+              ))
+            )}
+          </div>
 
         {/* Footer */}
         <footer className="bg-white rounded-lg shadow-sm border p-8">

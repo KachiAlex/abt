@@ -1,58 +1,37 @@
+import { useEffect, useState } from 'react';
 import { ArrowRight, MapPin, Calendar, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-
-const projects = [
-  {
-    id: 'PRJ-2023-001',
-    name: 'Aba-Umuahia Expressway Expansion',
-    location: 'Aba North',
-    budget: '₦1.2B',
-    progress: 65,
-    status: 'In Progress',
-    lastUpdate: '2 days ago',
-    contractor: 'Abia Infrastructure Ltd'
-  },
-  {
-    id: 'PRJ-2023-002',
-    name: 'Umuahia General Hospital Upgrade',
-    location: 'Umuahia North',
-    budget: '₦450M',
-    progress: 100,
-    status: 'Completed',
-    lastUpdate: '1 week ago',
-    contractor: 'Medical Facilities Nigeria'
-  },
-  {
-    id: 'PRJ-2023-003',
-    name: 'Aba South Water Treatment Plant',
-    location: 'Aba South',
-    budget: '₦780M',
-    progress: 30,
-    status: 'Delayed',
-    lastUpdate: '3 days ago',
-    contractor: 'Aqua Systems Ltd'
-  },
-  {
-    id: 'PRJ-2023-004',
-    name: 'Arochukwu Road Rehabilitation',
-    location: 'Arochukwu',
-    budget: '₦650M',
-    progress: 45,
-    status: 'In Progress',
-    lastUpdate: 'Yesterday',
-    contractor: 'Road Masters Nigeria'
-  },
-];
+import { projectAPI } from '../../services/api';
 
 const statusStyles = {
-  'Completed': 'status-completed',
-  'In Progress': 'status-in-progress',
-  'Delayed': 'status-delayed',
-  'Not Started': 'status-not-started'
+  'COMPLETED': 'status-completed',
+  'IN_PROGRESS': 'status-in-progress',
+  'DELAYED': 'status-delayed',
+  'NOT_STARTED': 'status-not-started'
 };
 
 export default function RecentProjects() {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadProjects = async () => {
+      try {
+        const res = await projectAPI.getAll({ limit: 5 });
+        if (res?.success && isMounted) {
+          setProjects(res.data?.projects || []);
+        }
+      } catch (e) {
+        console.error('Failed to load recent projects:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    loadProjects();
+    return () => { isMounted = false; };
+  }, []);
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
@@ -70,61 +49,63 @@ export default function RecentProjects() {
       </div>
 
       <div className="space-y-4">
-        {projects.map((project) => (
-          <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h4 className="text-sm font-semibold text-gray-900">{project.name}</h4>
-                  <span className={clsx('status-badge', statusStyles[project.status])}>
-                    {project.status}
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
-                  <div className="flex items-center">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    {project.location}
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : projects.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No recent projects</div>
+        ) : (
+          projects.map((project) => (
+            <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-900">{project.name}</h4>
+                    <span className={clsx('status-badge', statusStyles[project.status])}>
+                      {project.status}
+                    </span>
                   </div>
-                  <div className="flex items-center">
-                    <DollarSign className="h-3 w-3 mr-1" />
-                    Budget: {project.budget}
+                  
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
+                    <div className="flex items-center">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {project.lga}
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="h-3 w-3 mr-1" />
+                      Budget: ₦{(project.budget || 0).toLocaleString()}
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    Updated: {project.lastUpdate}
-                  </div>
-                </div>
 
-                <div className="flex items-center space-x-3">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-600">Progress</span>
-                      <span className="font-medium text-gray-900">{project.progress}%</span>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-600">Progress</span>
+                        <span className="font-medium text-gray-900">{project.progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={clsx(
+                            'h-2 rounded-full transition-all duration-300',
+                            project.status === 'COMPLETED' ? 'bg-green-500' :
+                            project.status === 'DELAYED' ? 'bg-red-500' : 'bg-yellow-500'
+                          )}
+                          style={{ width: `${project.progress}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={clsx(
-                          'h-2 rounded-full transition-all duration-300',
-                          project.status === 'Completed' ? 'bg-green-500' :
-                          project.status === 'Delayed' ? 'bg-red-500' : 'bg-yellow-500'
-                        )}
-                        style={{ width: `${project.progress}%` }}
-                      />
-                    </div>
+                    <Link
+                      to={`/projects/${project.id}`}
+                      className="text-xs text-abia-600 hover:text-abia-700 font-medium flex items-center"
+                    >
+                      View
+                      <ArrowRight className="ml-1 h-3 w-3" />
+                    </Link>
                   </div>
-                  <Link
-                    to={`/projects/${project.id}`}
-                    className="text-xs text-abia-600 hover:text-abia-700 font-medium flex items-center"
-                  >
-                    View
-                    <ArrowRight className="ml-1 h-3 w-3" />
-                  </Link>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

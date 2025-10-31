@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -21,9 +21,10 @@ import {
   Save
 } from 'lucide-react';
 import clsx from 'clsx';
+import { projectAPI } from '../services/api';
 
 // Mock project data - in a real app, this would come from an API
-const projectData = {
+const oldProjectData = {
   'PRJ-2023-001': {
     id: 'PRJ-2023-001',
     name: 'Aba-Umuahia Expressway Expansion',
@@ -137,17 +138,47 @@ export default function ProjectDetail() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Load project data from API
+  useEffect(() => {
+    let isMounted = true;
+    const loadProject = async () => {
+      try {
+        setLoading(true);
+        const res = await projectAPI.getById(id);
+        if (res?.success && isMounted) {
+          setProject(res.data?.project);
+        } else if (isMounted) {
+          setError('Failed to load project');
+        }
+      } catch (e) {
+        if (isMounted) {
+          setError(e.message || 'Failed to load project');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadProject();
+    }
+
+    return () => { isMounted = false; };
+  }, [id]);
 
   const handleEditProject = () => {
     console.log('Editing project:', id);
     // Initialize form data with current project data
-    const project = projectData[id];
     if (project) {
       setEditFormData({
         name: project.name,
         description: project.description,
         lga: project.lga,
-        budget: project.budget.total.replace('₦', '').replace(/,/g, ''),
+        budget: project.budget?.total || project.totalBudget || 0,
         status: project.status,
         progress: project.progress
       });
@@ -160,12 +191,23 @@ export default function ProjectDetail() {
     setEditFormData({});
   };
 
-  const handleSaveProject = () => {
+  const handleSaveProject = async () => {
     console.log('Saving project changes:', editFormData);
-    // Here you would typically make an API call to save the changes
-    alert('Project updated successfully!');
-    setIsEditModalOpen(false);
-    setEditFormData({});
+    try {
+      const res = await projectAPI.update(id, editFormData);
+      if (res?.success) {
+        alert('Project updated successfully!');
+        setIsEditModalOpen(false);
+        setEditFormData({});
+        // Reload project data
+        const updatedRes = await projectAPI.getById(id);
+        if (updatedRes?.success) {
+          setProject(updatedRes.data?.project);
+        }
+      }
+    } catch (e) {
+      alert('Failed to update project: ' + e.message);
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -174,13 +216,20 @@ export default function ProjectDetail() {
       [field]: value
     }));
   };
-  const project = projectData[id];
 
-  if (!project) {
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-xl font-bold text-gray-900">Loading...</h2>
+      </div>
+    );
+  }
+
+  if (error || !project) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-bold text-gray-900">Project not found</h2>
-        <p className="text-gray-600 mt-2">The project you're looking for doesn't exist.</p>
+        <p className="text-gray-600 mt-2">{error || "The project you're looking for doesn't exist."}</p>
         <Link to="/projects" className="btn-primary mt-4">Back to Projects</Link>
       </div>
     );

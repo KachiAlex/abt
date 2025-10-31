@@ -18,7 +18,6 @@ import {
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { useContractors } from '../contexts/ContractorsContext';
-import ContractorDebug from '../components/Debug/ContractorDebug';
 import ContractorDetailModal from '../components/Contractors/ContractorDetailModal';
 
 
@@ -335,9 +334,6 @@ export default function Contractors() {
           </div>
         )}
       </div>
-      
-      {/* Debug Component - Remove in production */}
-      <ContractorDebug />
       
       {/* Contractor Detail Modal */}
       <ContractorDetailModal
