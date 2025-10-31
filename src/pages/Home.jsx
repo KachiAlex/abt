@@ -126,12 +126,6 @@ export default function Home() {
             Enhancing Transparency, Accountability & Public Trust in Government Projects
           </p>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto mb-8">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-blue-800 font-medium">Demo Mode: This is a UI prototype without authentication or backend functionality.</p>
-            </div>
-          </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
