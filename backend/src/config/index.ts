@@ -8,10 +8,7 @@ if (!isFirebaseFunction) {
   dotenv.config();
 }
 
-// Debug logging (reduced to avoid deployment timeout)
-if (isFirebaseFunction) {
-  console.log('✅ Running as Firebase Function');
-}
+// Minimal logging to avoid deployment timeout
 
 // Import Firebase Functions conditionally
 let functionsConfig: any = {};
