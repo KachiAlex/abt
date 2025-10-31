@@ -191,6 +191,12 @@ export const contractorAPI = {
   getById: (id) => 
     apiFetch(`/contractors/${id}`),
 
+  create: (contractorData) =>
+    apiFetch('/contractors', {
+      method: 'POST',
+      body: JSON.stringify(contractorData),
+    }),
+
   getStats: (id) => 
     apiFetch(`/contractors/${id}/stats`),
 
