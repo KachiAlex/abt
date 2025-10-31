@@ -53,7 +53,7 @@ const apiFetch = async (endpoint, options = {}) => {
     // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {
       localStorage.removeItem('gpt_auth');
-      window.location.href = '/';
+      // Don't redirect here - let React Router handle it via AuthContext
       throw new Error('Authentication expired. Please log in again.');
     }
 
