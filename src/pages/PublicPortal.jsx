@@ -19,58 +19,6 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { publicAPI } from '../services/api';
 
-// Mock data for public portal
-const oldPublicProjects = [
-  {
-    id: 'PRJ-2023-001',
-    name: 'Aba-Umuahia Expressway Expansion',
-    description: 'Expansion of the Aba-Umuahia Expressway from 4 to 8 lanes to reduce traffic congestion and improve connectivity across Abia State.',
-    lga: 'Aba North',
-    contractor: 'Abia Infrastructure Ltd',
-    budget: '₦1.2B',
-    progress: 65,
-    status: 'In Progress',
-    startDate: '2023-01-15',
-    expectedCompletion: '2024-06-30',
-    beneficiaries: '2.5M residents',
-    category: 'Transportation',
-    lastUpdate: '2 days ago',
-    image: '/api/placeholder/400/200'
-  },
-  {
-    id: 'PRJ-2023-002',
-    name: 'Umuahia General Hospital Upgrade',
-    description: 'Modernization of Umuahia General Hospital with a new 200-bed facility and specialized units for maternal and child health.',
-    lga: 'Umuahia North',
-    contractor: 'Medical Facilities Nigeria',
-    budget: '₦450M',
-    progress: 100,
-    status: 'Completed',
-    startDate: '2022-11-10',
-    expectedCompletion: '2023-09-30',
-    beneficiaries: '800K residents',
-    category: 'Healthcare',
-    lastUpdate: '1 week ago',
-    image: '/api/placeholder/400/200'
-  },
-  {
-    id: 'PRJ-2023-003',
-    name: 'Aba South Water Treatment Plant',
-    description: 'Construction of modern water treatment facility to provide clean water access to underserved communities in Aba South.',
-    lga: 'Aba South',
-    contractor: 'Aqua Systems Ltd',
-    budget: '₦780M',
-    progress: 30,
-    status: 'In Progress',
-    startDate: '2023-02-20',
-    expectedCompletion: '2024-02-20',
-    beneficiaries: '1.2M residents',
-    category: 'Water & Sanitation',
-    lastUpdate: '3 days ago',
-    image: '/api/placeholder/400/200'
-  }
-];
-
 const categories = ['All Categories', 'Transportation', 'Healthcare', 'Water & Sanitation', 'Education', 'Housing'];
 const lgas = ['All LGAs', 'Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'];
 
