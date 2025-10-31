@@ -8,12 +8,10 @@ if (!isFirebaseFunction) {
   dotenv.config();
 }
 
-// Debug logging
-console.log('Environment detection:');
-console.log('FUNCTION_TARGET:', process.env.FUNCTION_TARGET);
-console.log('K_SERVICE:', process.env.K_SERVICE);
-console.log('FUNCTIONS_EMULATOR:', process.env.FUNCTIONS_EMULATOR);
-console.log('isFirebaseFunction:', isFirebaseFunction);
+// Debug logging (reduced to avoid deployment timeout)
+if (isFirebaseFunction) {
+  console.log('✅ Running as Firebase Function');
+}
 
 // Import Firebase Functions conditionally
 let functionsConfig: any = {};
@@ -21,7 +19,7 @@ try {
   const functions = require('firebase-functions');
   functionsConfig = functions.config();
   if (Object.keys(functionsConfig).length > 0) {
-    console.log('✅ Loaded Firebase Functions config');
+    // Config loaded successfully
   }
 } catch (error) {
   console.warn('Firebase Functions config not available, using environment variables');
