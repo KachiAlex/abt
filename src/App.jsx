@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -135,6 +136,24 @@ function AppContent() {
 }
 
 function App() {
+  // Clear any old/invalid auth tokens on app start
+  useEffect(() => {
+    const authData = localStorage.getItem('gpt_auth');
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData);
+        // If token exists but is invalid, clear it
+        if (parsed.token && (!parsed.user || !parsed.user.role)) {
+          console.log('Clearing invalid auth data');
+          localStorage.removeItem('gpt_auth');
+        }
+      } catch (error) {
+        console.error('Error parsing auth data:', error);
+        localStorage.removeItem('gpt_auth');
+      }
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <Router>
