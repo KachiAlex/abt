@@ -12,16 +12,6 @@ import './config';
 // Configure global options
 setGlobalOptions({ region: 'us-central1' });
 
-// Import routes
-import authRoutes from './routes/auth';
-import fileRoutes from './routes/files';
-import projectRoutes from './routes/projects';
-import contractorRoutes from './routes/contractors';
-import submissionRoutes from './routes/submissions';
-import dashboardRoutes from './routes/dashboard';
-import publicRoutes from './routes/public';
-import seedRoutes from './routes/seed';
-
 export const app = express();
 
 // Basic middleware
@@ -41,15 +31,15 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/contractors', contractorRoutes);
-app.use('/api/submissions', submissionRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/seed', seedRoutes);
+// Lazy-load routes to avoid initialization timeout
+app.use('/api/auth', require('./routes/auth').default);
+app.use('/api/files', require('./routes/files').default);
+app.use('/api/projects', require('./routes/projects').default);
+app.use('/api/contractors', require('./routes/contractors').default);
+app.use('/api/submissions', require('./routes/submissions').default);
+app.use('/api/dashboard', require('./routes/dashboard').default);
+app.use('/api/public', require('./routes/public').default);
+app.use('/api/seed', require('./routes/seed').default);
 
 // 404 handler
 app.use((_req, res) => {
