@@ -13,16 +13,7 @@ router.post('/', async (_req, res) => {
   try {
     const db = admin.firestore();
     
-    // Check if users already exist
-    const usersSnapshot = await db.collection('users').limit(1).get();
-    if (!usersSnapshot.empty) {
-      return res.status(400).json({
-        success: false,
-        message: 'Database already seeded',
-      });
-    }
-
-    // Seed users
+    // Always seed/update the admin user
     const hashedPassword = await bcrypt.hash('Password123!', 10);
     const now = admin.firestore.Timestamp.now();
 
