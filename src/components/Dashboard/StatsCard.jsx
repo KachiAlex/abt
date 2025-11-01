@@ -40,31 +40,31 @@ export default function StatsCard({
       )}></div>
       
       <div className="relative flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">{title}</p>
-          <div className={clsx('p-3 rounded-xl shadow-lg transform group-hover:scale-110 transition-transform duration-300', colorClasses[color])}>
-            <Icon className="h-6 w-6" />
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">{title}</p>
+          <div className={clsx('p-2 rounded-lg shadow-lg transform group-hover:scale-110 transition-transform duration-300', colorClasses[color])}>
+            <Icon className="h-5 w-5" />
           </div>
         </div>
         
         <div className="flex flex-col">
-          <div className="flex items-baseline flex-wrap gap-2 mb-2">
-            <p className="text-5xl font-extrabold text-gray-900 leading-none">{value}</p>
+          <div className="flex items-baseline flex-wrap gap-1.5 mb-1.5">
+            <p className="text-4xl font-extrabold text-gray-900 leading-none">{value}</p>
             {trendValue && (
               <div className={clsx(
-                'flex items-center text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap',
+                'flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap',
                 isPositiveTrend ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               )}>
                 {isPositiveTrend ? (
-                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                  <TrendingUp className="h-3 w-3 mr-0.5" />
                 ) : (
-                  <TrendingDown className="h-3.5 w-3.5 mr-1" />
+                  <TrendingDown className="h-3 w-3 mr-0.5" />
                 )}
                 {trendValue}
               </div>
             )}
           </div>
-          <p className="text-sm text-gray-600 font-medium mt-2">{subtitle}</p>
+          <p className="text-xs text-gray-600 font-medium mt-1">{subtitle}</p>
         </div>
       </div>
     </div>

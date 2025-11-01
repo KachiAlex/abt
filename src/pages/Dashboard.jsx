@@ -47,12 +47,12 @@ export default function Dashboard() {
     return () => { isMounted = false; };
   }, []);
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total Projects"
-          value={stats ? String(stats.total) : (loading ? '...' : '0')}
+          value={stats && stats.total !== undefined ? String(stats.total) : (loading ? '...' : '0')}
           subtitle={error ? 'Error loading' : '+12 from last month'}
           icon={FolderOpen}
           trend="up"
