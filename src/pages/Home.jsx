@@ -82,29 +82,29 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-abia-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">GPT</span>
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-abia-600 to-abia-800 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-extrabold text-lg">GPT</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Government Project Tracker</h1>
-                <p className="text-sm text-gray-600 hidden sm:block">Digital Accountability Platform</p>
+                <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Government Project Tracker</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 hidden sm:block font-medium">Digital Accountability Platform</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <Link 
                 to="/public" 
-                className="text-gray-600 hover:text-abia-600 text-sm font-medium"
+                className="text-gray-700 dark:text-gray-300 hover:text-abia-600 dark:hover:text-abia-400 text-sm font-semibold transition-colors"
               >
                 Public Portal
               </Link>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Phone className="h-4 w-4" />
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                <Phone className="h-5 w-5" />
                 <span className="hidden sm:inline">+234 800 GOV HEL</span>
               </div>
             </div>
@@ -114,30 +114,38 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
-        <div className="text-center py-16">
-          <div className="w-20 h-20 bg-abia-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-abia-600 font-bold text-2xl">GPT</span>
+        <div className="text-center py-20">
+          {/* Animated logo */}
+          <div className="w-28 h-28 bg-gradient-to-br from-abia-500 via-abia-600 to-abia-800 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl transform hover:scale-110 hover:rotate-6 transition-all duration-500">
+            <span className="text-white font-extrabold text-3xl drop-shadow-lg">GPT</span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Welcome to Government Project Tracker
+          {/* Main heading with gradient */}
+          <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
+            <span className="bg-gradient-to-r from-abia-600 via-blue-600 to-abia-800 bg-clip-text text-transparent">
+              Welcome to Government
+            </span>
+            <br />
+            Project Tracker
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Enhancing Transparency, Accountability & Public Trust in Government Projects
+          <p className="text-2xl text-gray-700 dark:text-gray-300 mb-4 max-w-3xl mx-auto font-medium">
+            Enhancing Transparency, Accountability & Public Trust
+          </p>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Empowering citizens with real-time access to government project data across Abia State
           </p>
           
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+          {/* Animated Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 mt-16">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <div key={index} className="bg-white rounded-lg shadow-sm border p-6 text-center">
-                  <div className="w-12 h-12 bg-abia-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Icon className="h-6 w-6 text-abia-600" />
+                <div key={index} className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-8 text-center transform hover:-translate-y-2 transition-all duration-300 cursor-pointer">
+                  <div className="w-16 h-16 bg-gradient-to-br from-abia-500 to-abia-700 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Icon className="h-8 w-8 text-white" />
                   </div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                  <div className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">{stat.value}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-semibold">{stat.label}</div>
                 </div>
               );
             })}
@@ -146,12 +154,14 @@ export default function Home() {
 
         {/* Role Selection */}
         <div className="pb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Select your role to access the platform</h2>
-            <p className="text-gray-600">Choose your role to access the appropriate dashboard and features</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6">Access Your Dashboard</h2>
+            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto font-medium">
+              Choose your role to access the appropriate dashboard and features
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
             {roles.map((role) => {
               const Icon = role.icon;
               const isSelected = selectedRole === role.id;
@@ -159,24 +169,28 @@ export default function Home() {
               return (
                 <div
                   key={role.id}
-                  className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 cursor-pointer ${
-                    isSelected ? 'border-abia-300 shadow-lg' : 'border-gray-200 hover:border-gray-300'
+                  className={`group bg-white dark:bg-gray-800 rounded-3xl shadow-xl border-2 transition-all duration-300 cursor-pointer transform hover:-translate-y-1 ${
+                    isSelected 
+                      ? 'border-abia-500 shadow-2xl ring-4 ring-abia-500/20 scale-105' 
+                      : 'border-gray-200 dark:border-gray-700 hover:border-abia-300 dark:hover:border-abia-600 hover:shadow-2xl'
                   }`}
                   onClick={() => setSelectedRole(role.id)}
                 >
-                  <div className="p-8 text-center">
-                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 ${
-                      isSelected ? 'bg-abia-100' : 'bg-gray-100'
+                  <div className="p-10 text-center">
+                    <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 ${
+                      isSelected 
+                        ? 'bg-gradient-to-br from-abia-500 to-abia-700 transform scale-110' 
+                        : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 group-hover:scale-110'
                     }`}>
-                      <Icon className={`h-8 w-8 ${isSelected ? 'text-abia-600' : 'text-gray-600'}`} />
+                      <Icon className={`h-12 w-12 ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`} />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{role.name}</h3>
-                    <p className="text-gray-600 mb-6">{role.description}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{role.name}</h3>
+                    <p className="text-gray-700 dark:text-gray-300 mb-8 font-medium">{role.description}</p>
                     
-                    <div className="space-y-2 mb-6">
+                    <div className="space-y-3 mb-8">
                       {role.features.map((feature, index) => (
-                        <div key={index} className="flex items-center text-sm text-gray-600">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        <div key={index} className="flex items-center justify-center text-base text-gray-700 dark:text-gray-300 font-medium">
+                          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                           {feature}
                         </div>
                       ))}
@@ -192,13 +206,13 @@ export default function Home() {
             {selectedRole && (
               <button
                 onClick={() => setShowSignInModal(true)}
-                className={`inline-flex items-center px-8 py-4 rounded-lg text-white font-semibold text-lg transition-colors ${
-                  roles.find(r => r.id === selectedRole)?.color || 'bg-abia-600 hover:bg-abia-700'
+                className={`inline-flex items-center px-10 py-5 rounded-2xl text-white font-bold text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-xl ${
+                  roles.find(r => r.id === selectedRole)?.color || 'bg-gradient-to-r from-abia-600 to-abia-700 hover:from-abia-700 hover:to-abia-800'
                 }`}
               >
-                <LogIn className="mr-2 h-5 w-5" />
+                <LogIn className="mr-3 h-6 w-6" />
                 Sign In as {roles.find(r => r.id === selectedRole)?.name}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-3 h-6 w-6" />
               </button>
             )}
           </div>
@@ -218,21 +232,23 @@ export default function Home() {
 
         {/* Features Section */}
         <div className="pb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Platform Features</h2>
-            <p className="text-gray-600">Comprehensive tools for effective project management and monitoring</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6">Platform Features</h2>
+            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto font-medium">
+              Comprehensive tools for effective project management and monitoring
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="bg-white rounded-lg shadow-sm border p-6 text-center">
-                  <div className="w-12 h-12 bg-abia-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <Icon className="h-6 w-6 text-abia-600" />
+                <div key={index} className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-8 text-center transform hover:-translate-y-2 transition-all duration-300 cursor-pointer">
+                  <div className="w-16 h-16 bg-gradient-to-br from-abia-500 to-abia-700 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Icon className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm">{feature.description}</p>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{feature.title}</h3>
+                  <p className="text-gray-700 dark:text-gray-300 text-base font-medium">{feature.description}</p>
                 </div>
               );
             })}
@@ -240,76 +256,76 @@ export default function Home() {
         </div>
 
         {/* Demo Navigation */}
-        <div className="bg-gray-50 rounded-xl p-8 mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Demo Navigation</h2>
-            <p className="text-gray-600">Quick access to different sections of the platform</p>
+        <div className="bg-gradient-to-br from-abia-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-12 mb-20 shadow-2xl border border-abia-200 dark:border-gray-600">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-4">Quick Access</h2>
+            <p className="text-lg text-gray-700 dark:text-gray-300 font-medium">Explore different sections of the platform</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link to="/dashboard" className="btn-secondary flex items-center justify-center space-x-2 py-3">
-              <Building className="h-4 w-4" />
-              <span className="text-sm">Admin Dashboard</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <Link to="/dashboard" className="group bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-abia-600 hover:to-abia-700 text-gray-900 dark:text-white hover:text-white font-bold px-6 py-5 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex items-center justify-center space-x-3 transform hover:-translate-y-2">
+              <Building className="h-6 w-6" />
+              <span className="text-base">Admin Dashboard</span>
             </Link>
-            <Link to="/contractor/dashboard" className="btn-secondary flex items-center justify-center space-x-2 py-3">
-              <Users className="h-4 w-4" />
-              <span className="text-sm">Contractor Portal</span>
+            <Link to="/contractor/dashboard" className="group bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-600 hover:to-blue-700 text-gray-900 dark:text-white hover:text-white font-bold px-6 py-5 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex items-center justify-center space-x-3 transform hover:-translate-y-2">
+              <Users className="h-6 w-6" />
+              <span className="text-base">Contractor Portal</span>
             </Link>
-            <Link to="/me/dashboard" className="btn-secondary flex items-center justify-center space-x-2 py-3">
-              <FileText className="h-4 w-4" />
-              <span className="text-sm">M&E Dashboard</span>
+            <Link to="/me/dashboard" className="group bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-green-600 hover:to-green-700 text-gray-900 dark:text-white hover:text-white font-bold px-6 py-5 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex items-center justify-center space-x-3 transform hover:-translate-y-2">
+              <FileText className="h-6 w-6" />
+              <span className="text-base">M&E Dashboard</span>
             </Link>
-            <Link to="/projects/PRJ-2023-001" className="btn-secondary flex items-center justify-center space-x-2 py-3">
-              <CheckCircle className="h-4 w-4" />
-              <span className="text-sm">Project Details</span>
+            <Link to="/projects/PRJ-2023-001" className="group bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-purple-700 text-gray-900 dark:text-white hover:text-white font-bold px-6 py-5 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex items-center justify-center space-x-3 transform hover:-translate-y-2">
+              <CheckCircle className="h-6 w-6" />
+              <span className="text-base">Project Details</span>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white border-t border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div className="col-span-2">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-abia-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">GPT</span>
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-abia-600 to-abia-800 rounded-2xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-extrabold text-xl">GPT</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold">Government Project Tracker</h3>
-                  <p className="text-gray-400 text-sm">Digital Accountability Platform</p>
+                  <h3 className="text-2xl font-extrabold">Government Project Tracker</h3>
+                  <p className="text-gray-400 text-base font-medium">Digital Accountability Platform</p>
                 </div>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-300 mb-6 text-lg leading-relaxed">
                 Enhancing transparency, accountability, and public trust in government project management and delivery.
               </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <Globe className="h-5 w-5" />
+              <div className="flex space-x-6">
+                <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-125 duration-300">
+                  <Globe className="h-6 w-6" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <Mail className="h-5 w-5" />
+                <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-125 duration-300">
+                  <Mail className="h-6 w-6" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <Phone className="h-5 w-5" />
+                <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-125 duration-300">
+                  <Phone className="h-6 w-6" />
                 </a>
               </div>
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/public" className="text-gray-400 hover:text-white">Public Portal</Link></li>
-                <li><Link to="/projects" className="text-gray-400 hover:text-white">All Projects</Link></li>
-                <li><Link to="/analytics" className="text-gray-400 hover:text-white">Analytics</Link></li>
-                <li><Link to="/reports" className="text-gray-400 hover:text-white">Reports</Link></li>
+              <h4 className="text-xl font-extrabold mb-6">Quick Links</h4>
+              <ul className="space-y-4 text-base">
+                <li><Link to="/public" className="text-gray-400 hover:text-white font-medium transition-colors">Public Portal</Link></li>
+                <li><Link to="/projects" className="text-gray-400 hover:text-white font-medium transition-colors">All Projects</Link></li>
+                <li><Link to="/analytics" className="text-gray-400 hover:text-white font-medium transition-colors">Analytics</Link></li>
+                <li><Link to="/reports" className="text-gray-400 hover:text-white font-medium transition-colors">Reports</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Contact</h4>
-              <div className="space-y-2 text-sm text-gray-400">
+              <h4 className="text-xl font-extrabold mb-6">Contact</h4>
+              <div className="space-y-3 text-base text-gray-300 font-medium">
                 <p>Government Project Office</p>
                 <p>Government Secretariat</p>
                 <p>Phone: +234 800 GOV HEL</p>
@@ -318,8 +334,8 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-400">
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center">
+            <p className="text-base text-gray-400 font-medium">
               © 2025 Government Project Tracker. All rights reserved. | Powered by Kreatix Technologies
             </p>
           </div>
