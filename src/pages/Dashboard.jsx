@@ -78,13 +78,13 @@ export default function Dashboard() {
           color="purple"
         />
         <StatsCard
-          title="Completion Rate"
-          value={stats ? `${Math.round(stats.averageProgress || 0)}%` : (loading ? '...' : '0%')}
-          subtitle="+4% from last month"
-          icon={TrendingUp}
+          title="Total Contractors"
+          value={stats && stats.contractors ? String(stats.contractors.total) : (loading ? '...' : '0')}
+          subtitle={stats && stats.contractors ? `${stats.contractors.verified} verified` : '0 verified'}
+          icon={Users}
           trend="up"
-          trendValue="+4%"
-          color="green"
+          trendValue="+3"
+          color="orange"
         />
       </div>
 

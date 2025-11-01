@@ -18,6 +18,7 @@ export default function StatsCard({
     yellow: 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white',
     red: 'bg-gradient-to-br from-red-500 to-red-600 text-white',
     purple: 'bg-gradient-to-br from-purple-500 to-purple-600 text-white',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600 text-white',
   };
 
   const accentBorders = {
@@ -26,6 +27,7 @@ export default function StatsCard({
     yellow: 'border-l-4 border-yellow-500',
     red: 'border-l-4 border-red-500',
     purple: 'border-l-4 border-purple-500',
+    orange: 'border-l-4 border-orange-500',
   };
 
   return (
@@ -36,6 +38,7 @@ export default function StatsCard({
         color === 'green' ? 'bg-green-500' :
         color === 'yellow' ? 'bg-yellow-500' :
         color === 'red' ? 'bg-red-500' :
+        color === 'orange' ? 'bg-orange-500' :
         'bg-purple-500'
       )}></div>
       

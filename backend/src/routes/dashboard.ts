@@ -61,6 +61,19 @@ router.get('/stats', verifyToken, async (_req, res) => {
 
     // Calculate statistics
     const stats = {
+      total: projects.length,
+      byStatus: {
+        NOT_STARTED: projects.filter(p => p.status === ProjectStatus.NOT_STARTED).length,
+        IN_PROGRESS: projects.filter(p => p.status === ProjectStatus.IN_PROGRESS).length,
+        NEAR_COMPLETION: projects.filter(p => p.status === ProjectStatus.NEAR_COMPLETION).length,
+        COMPLETED: projects.filter(p => p.status === ProjectStatus.COMPLETED).length,
+        DELAYED: projects.filter(p => p.status === ProjectStatus.DELAYED).length,
+        ON_HOLD: projects.filter(p => p.status === ProjectStatus.ON_HOLD).length,
+        CANCELLED: projects.filter(p => p.status === ProjectStatus.CANCELLED).length,
+      },
+      totalBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget), 0),
+      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length : 0,
+      // Additional stats for other dashboard components
       projects: {
         total: projects.length,
         active: projects.filter(p => p.status === ProjectStatus.IN_PROGRESS).length,
@@ -84,8 +97,7 @@ router.get('/stats', verifyToken, async (_req, res) => {
         totalAllocated: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget), 0),
         totalSpent: projects.reduce((sum, p) => sum + p.spentBudget, 0),
         remaining: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget) - p.spentBudget, 0)
-      },
-      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length : 0
+      }
     };
 
     return res.json({
