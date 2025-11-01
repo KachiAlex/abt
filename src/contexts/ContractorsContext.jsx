@@ -8,9 +8,23 @@ export const ContractorsProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load contractors from API on mount
+  // Load contractors from API on mount - only if authenticated
   useEffect(() => {
-    loadContractors();
+    // Check if we have an auth token before trying to load contractors
+    const authToken = localStorage.getItem('gpt_auth');
+    if (authToken) {
+      try {
+        const parsed = JSON.parse(authToken);
+        if (parsed.token) {
+          loadContractors();
+          return;
+        }
+      } catch (e) {
+        // Invalid auth data, just skip loading
+      }
+    }
+    // No auth token, just mark as loaded
+    setLoading(false);
   }, []);
 
   const loadContractors = async () => {
