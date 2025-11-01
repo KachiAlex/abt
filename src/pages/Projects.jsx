@@ -9,7 +9,8 @@ import {
   Calendar, 
   DollarSign,
   User,
-  MoreHorizontal
+  MoreHorizontal,
+  FolderOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
