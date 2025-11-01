@@ -73,14 +73,14 @@ export default function Projects() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600">Manage and monitor all projects across Abia State.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
+          <p className="text-lg text-gray-600">Manage and monitor all projects across Abia State.</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-3">
+        <div className="mt-4 sm:mt-0 flex space-x-4">
           <button className="btn-secondary flex items-center space-x-2">
             <Download className="h-4 w-4" />
             <span>Export</span>
@@ -146,36 +146,36 @@ export default function Projects() {
       </div>
 
       {/* Projects Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card text-center">
-          <h3 className="text-2xl font-bold text-gray-900">{projects.length}</h3>
-          <p className="text-sm text-gray-600">Total Projects</p>
+          <h3 className="text-3xl font-bold text-gray-900">{projects.length}</h3>
+          <p className="text-base text-gray-600 mt-2">Total Projects</p>
         </div>
         <div className="card text-center">
-          <h3 className="text-2xl font-bold text-green-600">
-            {projects.filter(p => p.status === 'Completed').length}
+          <h3 className="text-3xl font-bold text-green-600">
+            {projects.filter(p => p.status === 'COMPLETED' || p.status === 'Completed').length}
           </h3>
-          <p className="text-sm text-gray-600">Completed</p>
+          <p className="text-base text-gray-600 mt-2">Completed</p>
         </div>
         <div className="card text-center">
-          <h3 className="text-2xl font-bold text-yellow-600">
-            {projects.filter(p => p.status === 'In Progress').length}
+          <h3 className="text-3xl font-bold text-yellow-600">
+            {projects.filter(p => p.status === 'IN_PROGRESS' || p.status === 'In Progress').length}
           </h3>
-          <p className="text-sm text-gray-600">In Progress</p>
+          <p className="text-base text-gray-600 mt-2">In Progress</p>
         </div>
         <div className="card text-center">
-          <h3 className="text-2xl font-bold text-red-600">
-            {projects.filter(p => p.status === 'Delayed').length}
+          <h3 className="text-3xl font-bold text-red-600">
+            {projects.filter(p => p.status === 'DELAYED' || p.status === 'Delayed').length}
           </h3>
-          <p className="text-sm text-gray-600">Delayed</p>
+          <p className="text-base text-gray-600 mt-2">Delayed</p>
         </div>
       </div>
 
       {/* Projects Table */}
       <div className="card">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">All Projects</h3>
-          <p className="text-sm text-gray-600">A comprehensive list of all projects in the Abia Project Tracker system.</p>
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">All Projects</h3>
+          <p className="text-base text-gray-600 mt-1">A comprehensive list of all projects in the Abia Project Tracker system.</p>
         </div>
 
         {/* Desktop Table */}
@@ -183,58 +183,60 @@ export default function Projects() {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-900">ID</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Project Name</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">LGA</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Contractor</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Timeline</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Budget</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Progress</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">ID</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Project Name</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">LGA</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Contractor</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Timeline</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Budget</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Status</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Progress</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredProjects.map((project) => (
-                <tr key={project.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-4 px-4 text-sm font-mono text-gray-600">{project.id}</td>
-                  <td className="py-4 px-4">
+                <tr key={project.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-5 px-4 text-base font-mono text-gray-600">{project.id}</td>
+                  <td className="py-5 px-4">
                     <div>
-                      <p className="font-medium text-gray-900">{project.name}</p>
-                      <p className="text-xs text-gray-500">Updated: {project.lastUpdate}</p>
+                      <p className="font-semibold text-gray-900 text-base">{project.name}</p>
+                      <p className="text-sm text-gray-500 mt-1">Updated: {project.lastUpdate}</p>
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-600">{project.lga}</td>
-                  <td className="py-4 px-4 text-sm text-gray-600">{project.contractor}</td>
-                  <td className="py-4 px-4 text-sm text-gray-600">{project.timeline}</td>
-                  <td className="py-4 px-4 text-sm font-medium text-gray-900">{project.budget}</td>
-                  <td className="py-4 px-4">
+                  <td className="py-5 px-4 text-base text-gray-600">{project.lga}</td>
+                  <td className="py-5 px-4 text-base text-gray-600">{project.contractor}</td>
+                  <td className="py-5 px-4 text-base text-gray-600">{project.timeline}</td>
+                  <td className="py-5 px-4 text-base font-medium text-gray-900">{project.budget}</td>
+                  <td className="py-5 px-4">
                     <span className={clsx('status-badge', statusStyles[project.status])}>
                       {project.status}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[80px]">
+                  <td className="py-5 px-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-1 bg-gray-200 rounded-full h-3 max-w-[100px]">
                         <div 
                           className={clsx(
-                            'h-2 rounded-full',
+                            'h-3 rounded-full',
+                            project.status === 'COMPLETED' ? 'bg-green-500' :
+                            project.status === 'DELAYED' ? 'bg-red-500' : 
                             project.status === 'Completed' ? 'bg-green-500' :
                             project.status === 'Delayed' ? 'bg-red-500' : 'bg-yellow-500'
                           )}
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600 min-w-[30px]">{project.progress}%</span>
+                      <span className="text-sm text-gray-600 min-w-[40px] font-medium">{project.progress}%</span>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="py-5 px-4">
+                    <div className="flex items-center space-x-3">
                       <Link
                         to={`/projects/${project.id}`}
-                        className="text-abia-600 hover:text-abia-700 p-1 rounded"
+                        className="text-abia-600 hover:text-abia-700 p-2 rounded-lg hover:bg-abia-50 transition-colors"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-5 w-5" />
                       </Link>
                       <button className="text-gray-400 hover:text-gray-600 p-1 rounded">
                         <MoreHorizontal className="h-4 w-4" />

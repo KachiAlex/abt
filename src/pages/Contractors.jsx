@@ -75,14 +75,14 @@ export default function Contractors() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contractors</h1>
-          <p className="text-gray-600">Manage and monitor all contractors working on Abia State projects.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Contractors</h1>
+          <p className="text-lg text-gray-600">Manage and monitor all contractors working on Abia State projects.</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-3">
+        <div className="mt-4 sm:mt-0 flex space-x-4">
           <button className="btn-secondary flex items-center space-x-2">
             <Download className="h-4 w-4" />
             <span>Export</span>
@@ -95,38 +95,38 @@ export default function Contractors() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card text-center">
-          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-3">
-            <Building className="h-6 w-6 text-blue-600" />
+          <div className="flex items-center justify-center w-14 h-14 bg-blue-100 rounded-lg mx-auto mb-4">
+            <Building className="h-7 w-7 text-blue-600" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">{contractors.length}</h3>
-          <p className="text-sm text-gray-600">Total Contractors</p>
+          <h3 className="text-3xl font-bold text-gray-900">{contractors.length}</h3>
+          <p className="text-base text-gray-600 mt-2">Total Contractors</p>
         </div>
         <div className="card text-center">
-          <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mx-auto mb-3">
-            <User className="h-6 w-6 text-green-600" />
+          <div className="flex items-center justify-center w-14 h-14 bg-green-100 rounded-lg mx-auto mb-4">
+            <User className="h-7 w-7 text-green-600" />
           </div>
-          <h3 className="text-2xl font-bold text-green-600">
+          <h3 className="text-3xl font-bold text-green-600">
             {contractors.filter(c => c.status === 'Active').length}
           </h3>
-          <p className="text-sm text-gray-600">Active</p>
+          <p className="text-base text-gray-600 mt-2">Active</p>
         </div>
         <div className="card text-center">
-          <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg mx-auto mb-3">
-            <Award className="h-6 w-6 text-yellow-600" />
+          <div className="flex items-center justify-center w-14 h-14 bg-yellow-100 rounded-lg mx-auto mb-4">
+            <Award className="h-7 w-7 text-yellow-600" />
           </div>
-          <h3 className="text-2xl font-bold text-yellow-600">4.4</h3>
-          <p className="text-sm text-gray-600">Avg. Rating</p>
+          <h3 className="text-3xl font-bold text-yellow-600">4.4</h3>
+          <p className="text-base text-gray-600 mt-2">Avg. Rating</p>
         </div>
         <div className="card text-center">
-          <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mx-auto mb-3">
-            <TrendingUp className="h-6 w-6 text-purple-600" />
+          <div className="flex items-center justify-center w-14 h-14 bg-purple-100 rounded-lg mx-auto mb-4">
+            <TrendingUp className="h-7 w-7 text-purple-600" />
           </div>
-          <h3 className="text-2xl font-bold text-purple-600">
+          <h3 className="text-3xl font-bold text-purple-600">
             {contractors.reduce((sum, c) => sum + c.projects.ongoing, 0)}
           </h3>
-          <p className="text-sm text-gray-600">Ongoing Projects</p>
+          <p className="text-base text-gray-600 mt-2">Ongoing Projects</p>
         </div>
       </div>
 
@@ -185,9 +185,9 @@ export default function Contractors() {
 
       {/* Contractors Table */}
       <div className="card">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">All Contractors</h3>
-          <p className="text-sm text-gray-600">A comprehensive list of all contractors in the Abia Project Tracker system.</p>
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">All Contractors</h3>
+          <p className="text-base text-gray-600 mt-1">A comprehensive list of all contractors in the Abia Project Tracker system.</p>
         </div>
 
         {/* Desktop Table */}
@@ -195,63 +195,63 @@ export default function Contractors() {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-900">ID</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Contractor</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Specialization</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Contact Person</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Rating</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Projects</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">ID</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Contractor</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Specialization</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Contact Person</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Rating</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Status</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Projects</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredContractors.map((contractor) => (
-                <tr key={contractor.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-4 px-4 text-sm font-mono text-gray-600">{contractor.id}</td>
-                  <td className="py-4 px-4">
+                <tr key={contractor.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-5 px-4 text-base font-mono text-gray-600">{contractor.id}</td>
+                  <td className="py-5 px-4">
                     <div>
-                      <p className="font-medium text-gray-900">{contractor.name}</p>
-                      <p className="text-xs text-gray-500">{contractor.email}</p>
+                      <p className="font-semibold text-base text-gray-900">{contractor.name}</p>
+                      <p className="text-sm text-gray-500 mt-1">{contractor.email}</p>
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-600">{contractor.specialization}</td>
-                  <td className="py-4 px-4">
+                  <td className="py-5 px-4 text-base text-gray-600">{contractor.specialization}</td>
+                  <td className="py-5 px-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{contractor.contact}</p>
-                      <p className="text-xs text-gray-500">{contractor.phone}</p>
+                      <p className="text-base font-medium text-gray-900">{contractor.contact}</p>
+                      <p className="text-sm text-gray-500 mt-1">{contractor.phone}</p>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-1">
-                      <span className="text-sm font-medium text-gray-900">{contractor.rating}</span>
+                  <td className="py-5 px-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-base font-medium text-gray-900">{contractor.rating}</span>
                       <div className="flex">
                         {renderStars(contractor.rating)}
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-5 px-4">
                     <span className={clsx('status-badge', statusStyles[contractor.status])}>
                       {contractor.status}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="text-sm">
+                  <td className="py-5 px-4">
+                    <div className="text-base">
                       <p className="text-green-600 font-medium">{contractor.projects.completed} completed</p>
-                      <p className="text-yellow-600">{contractor.projects.ongoing} ongoing</p>
+                      <p className="text-yellow-600 mt-1">{contractor.projects.ongoing} ongoing</p>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="py-5 px-4">
+                    <div className="flex items-center space-x-3">
                       <button
                         onClick={() => handleViewDetails(contractor)}
-                        className="text-abia-600 hover:text-abia-700 p-1 rounded"
+                        className="text-abia-600 hover:text-abia-700 p-2 rounded-lg hover:bg-abia-50 transition-colors"
                         title="View Details"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-5 w-5" />
                       </button>
-                      <button className="text-gray-400 hover:text-gray-600 p-1 rounded">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <button className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <MoreHorizontal className="h-5 w-5" />
                       </button>
                     </div>
                   </td>
@@ -264,7 +264,7 @@ export default function Contractors() {
         {/* Mobile Cards */}
         <div className="lg:hidden space-y-4">
           {filteredContractors.map((contractor) => (
-            <div key={contractor.id} className="border border-gray-200 rounded-lg p-4">
+            <div key={contractor.id} className="border border-gray-200 rounded-lg p-5">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h4 className="font-medium text-gray-900">{contractor.name}</h4>

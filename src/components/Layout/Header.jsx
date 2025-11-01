@@ -55,24 +55,24 @@ export default function Header({ title = "Dashboard" }) {
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-8 py-6">
         {/* Left side - Title and breadcrumb */}
-        <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <div className="flex items-center space-x-6">
+          <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
           <div className="hidden md:block">
-            <p className="text-sm text-gray-500">Welcome back! Here's an overview of all projects across Abia State.</p>
+            <p className="text-base text-gray-500">Welcome back! Here's an overview of all projects across Abia State.</p>
           </div>
         </div>
 
         {/* Right side - Search, notifications, and user menu */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-6">
           {/* Search */}
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search projects, contractors..."
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+              className="pl-10 pr-4 py-3 w-72 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
             />
           </div>
 

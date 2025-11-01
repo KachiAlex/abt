@@ -50,12 +50,12 @@ export default function RecentProjects() {
 
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading...</div>
+          <div className="text-center py-12 text-gray-500 text-lg">Loading...</div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No recent projects</div>
+          <div className="text-center py-12 text-gray-500 text-lg">No recent projects</div>
         ) : (
           projects.map((project) => (
-            <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div key={project.id} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">

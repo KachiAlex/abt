@@ -61,7 +61,7 @@ function AppContent() {
       <div className="lg:ml-64">
         <Header title={getPageTitle()} />
         
-        <main className="p-6">
+        <main className="p-8">
           <Routes>
             <Route path="/dashboard" element={
               <ProtectedRoute roles={['GOVERNMENT_ADMIN', 'GOVERNMENT_OFFICER']}>

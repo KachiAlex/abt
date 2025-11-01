@@ -47,9 +47,9 @@ export default function Dashboard() {
     return () => { isMounted = false; };
   }, []);
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatsCard
           title="Total Projects"
           value={stats ? String(stats.total) : (loading ? '...' : '0')}
@@ -89,22 +89,22 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ProjectStatusChart type="bar" />
         <ProjectStatusChart type="pie" />
       </div>
 
       {/* Recent Projects and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <RecentProjects />
         </div>
         
         {/* Quick Links and Activity */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Quick Links */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Links</h3>
             <div className="space-y-3">
               {canAccessAdminFeatures() && (
                 <button 
