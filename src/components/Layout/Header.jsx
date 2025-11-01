@@ -136,8 +136,12 @@ export default function Header({ title = "Dashboard" }) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <div className="w-8 h-8 bg-abia-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">{getUserInitials()}</span>
+              <div className="w-8 h-8 bg-abia-600 rounded-full flex items-center justify-center overflow-hidden">
+                {user?.profileImage ? (
+                  <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white font-semibold text-sm">{getUserInitials()}</span>
+                )}
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-900">

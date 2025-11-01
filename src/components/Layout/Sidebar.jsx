@@ -100,8 +100,12 @@ export default function Sidebar({ userRole = 'Government Official' }) {
         {/* User Info */}
         <div className="px-6 py-6 border-b border-gray-200 bg-white/50">
           <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-abia-500 to-abia-700 rounded-2xl flex items-center justify-center shadow-lg relative">
-              <span className="text-white font-bold text-lg">{getUserInitials()}</span>
+            <div className="w-14 h-14 bg-gradient-to-br from-abia-500 to-abia-700 rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden">
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white font-bold text-lg">{getUserInitials()}</span>
+              )}
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white"></div>
             </div>
             <div className="flex-1">

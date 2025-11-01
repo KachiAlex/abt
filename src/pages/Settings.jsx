@@ -133,11 +133,16 @@ export default function Settings() {
     fileInputRef.current?.click();
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = async () => {
     setProfileImage(null);
     setProfileImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    // Also remove from user profile
+    if (user?.profileImage) {
+      const { profileImage, ...userWithoutImage } = user;
+      updateUser(userWithoutImage);
     }
   };
 
@@ -152,8 +157,16 @@ export default function Settings() {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
+      // Prepare updated user data with profile image
+      const updatedUserData = { ...formData };
+      
+      // If there's a profile image, store the preview URL
+      if (profileImagePreview) {
+        updatedUserData.profileImage = profileImagePreview;
+      }
+
       // Update user context with new data
-      updateUser(formData);
+      updateUser(updatedUserData);
 
       // If there's a profile image, simulate upload
       if (profileImage) {
@@ -269,10 +282,10 @@ export default function Settings() {
                 <div className="flex items-center space-x-6 mb-6">
                   <div className="relative">
                     <div className="w-20 h-20 bg-abia-100 rounded-full flex items-center justify-center overflow-hidden">
-                      {profileImagePreview ? (
+                      {profileImagePreview || user?.profileImage ? (
                         <img 
-                          src={profileImagePreview} 
-                          alt="Profile preview" 
+                          src={profileImagePreview || user?.profileImage} 
+                          alt="Profile" 
                           className="w-full h-full object-cover"
                         />
                       ) : (
