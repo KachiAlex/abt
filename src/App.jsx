@@ -4,9 +4,9 @@ import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ContractorsProvider } from './contexts/ContractorsContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -23,6 +23,19 @@ import Settings from './pages/Settings';
 import ProgressMeasurement from './pages/ProgressMeasurement';
 import PublicPortal from './pages/PublicPortal';
 import './App.css';
+
+function ThemeSync() {
+  const { user } = useAuth();
+  const { setTheme } = useTheme();
+  
+  useEffect(() => {
+    if (user?.preferences?.theme) {
+      setTheme(user.preferences.theme);
+    }
+  }, [user?.preferences?.theme, setTheme]);
+  
+  return null;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -57,6 +70,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ThemeSync />
       <Sidebar />
       
       <div className="lg:ml-64">

@@ -27,6 +27,7 @@ import {
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { authAPI } from '../services/api';
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
@@ -63,7 +64,7 @@ export default function Settings() {
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('WAT');
 
-  // Sync form data when user data changes
+  // Sync form data and preferences when user data changes
   useEffect(() => {
     if (user) {
       setFormData({
@@ -77,8 +78,16 @@ export default function Settings() {
         city: user.city || '',
         state: user.state || 'Abia State'
       });
+      
+      // Load preferences if they exist
+      if (user.preferences) {
+        if (user.preferences.theme) setTheme(user.preferences.theme);
+        if (user.preferences.language) setLanguage(user.preferences.language);
+        if (user.preferences.timezone) setTimezone(user.preferences.timezone);
+        if (user.preferences.notifications) setNotifications(user.preferences.notifications);
+      }
     }
-  }, [user]);
+  }, [user, setTheme]);
 
   const tabs = [
     { id: 'profile', name: 'Profile', icon: User },
@@ -152,37 +161,39 @@ export default function Settings() {
     setSuccessMessage('');
 
     try {
-      // In a real app, this would make API calls to update the profile
-      // For demo purposes, we'll simulate the update
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Prepare updated user data with profile image
+      // Prepare updated user data with profile image and preferences
       const updatedUserData = { ...formData };
       
       // If there's a profile image, store the preview URL
       if (profileImagePreview) {
         updatedUserData.profileImage = profileImagePreview;
       }
-
-      // Update user context with new data
-      updateUser(updatedUserData);
-
-      // If there's a profile image, simulate upload
-      if (profileImage) {
-        // In a real app, you'd upload to your backend/cloud storage
-        console.log('Uploading profile image:', profileImage.name);
-      }
-
-      setSuccessMessage('Profile updated successfully!');
       
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(''), 3000);
+      // Add preferences
+      updatedUserData.preferences = {
+        theme,
+        language,
+        timezone,
+        notifications
+      };
+
+      // Call the API to update the profile in the database
+      const response = await authAPI.updateProfile(updatedUserData);
+      
+      if (response.success && response.data && response.data.user) {
+        // Update user context with new data from server
+        updateUser(response.data.user);
+        setSuccessMessage('Profile updated successfully!');
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        throw new Error(response.message || 'Failed to update profile');
+      }
       
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again.');
+      alert(error.message || 'Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
     }

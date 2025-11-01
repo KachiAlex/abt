@@ -245,7 +245,7 @@ router.put('/profile', async (req, res) => {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, config.jwtSecret) as any;
 
-    const { firstName, lastName, phone, department, jobTitle, address, city, state } = req.body;
+    const { firstName, lastName, phone, department, jobTitle, address, city, state, profileImage, preferences } = req.body;
 
     // Update user in Firestore
     const updateData: any = {
@@ -260,6 +260,8 @@ router.put('/profile', async (req, res) => {
     if (address) updateData.address = address;
     if (city) updateData.city = city;
     if (state) updateData.state = state;
+    if (profileImage) updateData.profileImage = profileImage;
+    if (preferences) updateData.preferences = preferences;
 
     await db.collection(Collections.USERS).doc(decoded.userId).update(updateData);
 
