@@ -8,25 +8,6 @@ export const ContractorsProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load contractors from API on mount - only if authenticated
-  useEffect(() => {
-    // Check if we have an auth token before trying to load contractors
-    const authToken = localStorage.getItem('gpt_auth');
-    if (authToken) {
-      try {
-        const parsed = JSON.parse(authToken);
-        if (parsed.token) {
-          loadContractors();
-          return;
-        }
-      } catch (e) {
-        // Invalid auth data, just skip loading
-      }
-    }
-    // No auth token, just mark as loaded
-    setLoading(false);
-  }, []);
-
   const loadContractors = async () => {
     try {
       setLoading(true);
@@ -46,25 +27,26 @@ export const ContractorsProvider = ({ children }) => {
           specialization: contractor.specialization?.[0] || 'General',
           rating: contractor.rating || 0,
           status: contractor.isVerified ? 'Active' : 'Inactive',
-          projects: { completed: 0, ongoing: 0 }, // Will be populated from projects data
+          projects: { completed: 0, ongoing: 0 },
           location: contractor.companyAddress || 'Not specified',
           joinDate: contractor.createdAt ? (typeof contractor.createdAt.toDate === 'function' ? new Date(contractor.createdAt.toDate()).toISOString().split('T')[0] : new Date(contractor.createdAt).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
           totalValue: '₦0',
-          // Store full data for reference
           userId: contractor.userId,
-          registrationNumber: contractor.registrationNumber,
+          registrationNumber: contractor.registrationNo,
           isVerified: contractor.isVerified,
           isCertified: contractor.isCertified,
           yearsExperience: contractor.yearsExperience,
           user: contractor.user
         }));
+        console.log('Transformed contractors:', transformed);
         setContractors(transformed);
       } else {
+        console.log('No contractors found in response');
         setContractors([]);
       }
     } catch (error) {
-      // Silently handle auth errors when not logged in (e.g., on public pages)
       if (error.message && error.message.includes('Authentication expired')) {
+        console.log('Authentication expired, skipping contractors load');
         setContractors([]);
       } else {
         console.error('Error loading contractors:', error);
@@ -76,16 +58,37 @@ export const ContractorsProvider = ({ children }) => {
     }
   };
 
+  // Load contractors from API on mount - only if authenticated
+  useEffect(() => {
+    // Check if we have an auth token before trying to load contractors
+    const authToken = localStorage.getItem('gpt_auth');
+    if (authToken) {
+      try {
+        const parsed = JSON.parse(authToken);
+        if (parsed.token) {
+          console.log('Auth token found, loading contractors...');
+          loadContractors();
+          return;
+        }
+      } catch (e) {
+        console.log('Invalid auth data, skipping contractors load');
+      }
+    }
+    console.log('No auth token, skipping contractors load');
+    // No auth token, just mark as loaded
+    setLoading(false);
+  }, []);
+
   const addContractor = async (contractorData) => {
     try {
       // Step 1: Register the user first
       const userRegistrationData = {
-        email: contractorData.email,
+      email: contractorData.email,
         password: contractorData.password,
         firstName: contractorData.contactPerson?.split(' ')[0] || contractorData.contactPerson,
         lastName: contractorData.contactPerson?.split(' ').slice(1).join(' ') || '',
         role: 'CONTRACTOR',
-        phone: contractorData.phone,
+      phone: contractorData.phone,
       };
 
       console.log('Registering user:', userRegistrationData);
