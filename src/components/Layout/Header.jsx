@@ -54,13 +54,13 @@ export default function Header({ title = "Dashboard" }) {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200 sticky top-0 z-30">
       <div className="flex items-center justify-between px-8 py-6">
         {/* Left side - Title and breadcrumb */}
-        <div className="flex items-center space-x-6">
-          <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-          <div className="hidden md:block">
-            <p className="text-base text-gray-500">Welcome back! Here's an overview of all projects across Abia State.</p>
+        <div className="flex flex-col">
+          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-abia-600 to-abia-800 bg-clip-text text-transparent">{title}</h1>
+          <div className="hidden md:block mt-1">
+            <p className="text-base text-gray-600 font-medium">Welcome back! Here's an overview of all projects across Abia State.</p>
           </div>
         </div>
 

@@ -81,31 +81,33 @@ export default function Sidebar({ userRole = 'Government Official' }) {
 
       {/* Sidebar */}
       <div className={clsx(
-        'fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0',
+        'fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-white to-gray-50/50 backdrop-blur-xl shadow-2xl border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         {/* Logo and Header */}
-        <div className="flex items-center justify-center h-16 px-4 bg-abia-600">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-              <span className="text-abia-600 font-bold text-sm">GPT</span>
+        <div className="flex items-center justify-center h-20 px-4 bg-gradient-to-r from-abia-600 via-abia-700 to-abia-800 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-abia-500/20 to-transparent"></div>
+          <div className="relative flex items-center space-x-3">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg transform hover:rotate-12 transition-transform duration-300">
+              <span className="text-abia-600 font-extrabold text-lg">GPT</span>
             </div>
             <div className="text-white">
-              <h1 className="text-lg font-bold">Government Project Tracker</h1>
+              <h1 className="text-base font-extrabold leading-tight">Government Project Tracker</h1>
             </div>
           </div>
         </div>
 
         {/* User Info */}
-        <div className="px-4 py-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-abia-100 rounded-full flex items-center justify-center">
-              <span className="text-abia-600 font-semibold text-sm">{getUserInitials()}</span>
+        <div className="px-6 py-6 border-b border-gray-200 bg-white/50">
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-abia-500 to-abia-700 rounded-2xl flex items-center justify-center shadow-lg relative">
+              <span className="text-white font-bold text-lg">{getUserInitials()}</span>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white"></div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">{getUserDisplayName()}</p>
-              <p className="text-xs text-gray-500">{user ? getRoleDisplayName(user.role) : userRole}</p>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+            <div className="flex-1">
+              <p className="text-base font-bold text-gray-900">{getUserDisplayName()}</p>
+              <p className="text-xs text-gray-600 font-medium mt-0.5">{user ? getRoleDisplayName(user.role) : userRole}</p>
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-green-600 text-white mt-2 shadow-md">
                 {user?.role === 'GOVERNMENT_ADMIN' ? 'Admin' : 
                  user?.role === 'ME_OFFICER' ? 'M&E' :
                  user?.role === 'CONTRACTOR' ? 'Contractor' : 'Officer'}
@@ -116,7 +118,7 @@ export default function Sidebar({ userRole = 'Government Official' }) {
 
         {/* Navigation */}
         <nav className="mt-6 px-3">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {navigationItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -124,17 +126,17 @@ export default function Sidebar({ userRole = 'Government Official' }) {
                   key={item.name}
                   to={item.href}
                   className={clsx(
-                    'group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors',
+                    'group flex items-center px-4 py-3.5 text-base font-semibold rounded-xl transition-all duration-300 relative',
                     isActive
-                      ? 'bg-abia-100 text-abia-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-gradient-to-r from-abia-500 to-abia-600 text-white shadow-lg shadow-abia-500/30 transform scale-105'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md'
                   )}
                   onClick={() => setIsOpen(false)}
                 >
                   <item.icon
                     className={clsx(
-                      'mr-3 h-5 w-5',
-                      isActive ? 'text-abia-500' : 'text-gray-400 group-hover:text-gray-500'
+                      'mr-3 h-5 w-5 transition-transform duration-300',
+                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600 group-hover:scale-110'
                     )}
                   />
                   {item.name}
