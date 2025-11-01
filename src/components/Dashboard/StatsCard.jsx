@@ -41,7 +41,7 @@ export default function StatsCard({
       
       <div className="relative flex flex-col">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">{title}</p>
+          <p className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{title}</p>
           <div className={clsx('p-2 rounded-lg shadow-lg transform group-hover:scale-110 transition-transform duration-300', colorClasses[color])}>
             <Icon className="h-5 w-5" />
           </div>
@@ -49,11 +49,11 @@ export default function StatsCard({
         
         <div className="flex flex-col">
           <div className="flex items-baseline flex-wrap gap-1.5 mb-1.5">
-            <p className="text-4xl font-extrabold text-gray-900 leading-none">{value}</p>
+            <p className="text-4xl font-extrabold text-gray-900 dark:text-gray-100 leading-none">{value}</p>
             {trendValue && (
               <div className={clsx(
                 'flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap',
-                isPositiveTrend ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                isPositiveTrend ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200'
               )}>
                 {isPositiveTrend ? (
                   <TrendingUp className="h-3 w-3 mr-0.5" />
@@ -64,7 +64,7 @@ export default function StatsCard({
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-600 font-medium mt-1">{subtitle}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">{subtitle}</p>
         </div>
       </div>
     </div>

@@ -26,9 +26,11 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
+  const { theme, setTheme } = useTheme();
   const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,7 +60,6 @@ export default function Settings() {
     deadlines: true,
     approvals: false
   });
-  const [theme, setTheme] = useState('light');
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('WAT');
 

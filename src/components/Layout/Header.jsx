@@ -1,10 +1,12 @@
 import { Bell, Search, ChevronDown, Sun, Moon, LogOut, User, Settings, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Header({ title = "Dashboard" }) {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [notifications] = useState([
     { id: 1, text: "Aba South Water Project is 2 weeks behind schedule", type: "warning", time: "2 hours ago" },
@@ -14,7 +16,6 @@ export default function Header({ title = "Dashboard" }) {
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
 
   const handleSignOut = () => {
     // Clear all cached data
@@ -54,13 +55,13 @@ export default function Header({ title = "Dashboard" }) {
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200 sticky top-0 z-30">
+    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
       <div className="flex items-center justify-between px-8 py-6">
         {/* Left side - Title and breadcrumb */}
         <div className="flex flex-col">
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-abia-600 to-abia-800 bg-clip-text text-transparent">{title}</h1>
           <div className="hidden md:block mt-1">
-            <p className="text-base text-gray-600 font-medium">Welcome back! Here's an overview of all projects across Abia State.</p>
+            <p className="text-base text-gray-600 dark:text-gray-400 font-medium">Welcome back! Here's an overview of all projects across Abia State.</p>
           </div>
         </div>
 
@@ -72,16 +73,16 @@ export default function Header({ title = "Dashboard" }) {
             <input
               type="text"
               placeholder="Search projects, contractors..."
-              className="pl-10 pr-4 py-3 w-72 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+              className="pl-10 pr-4 py-3 w-72 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
 
           {/* Dark mode toggle */}
           <button
-            onClick={() => setDarkMode(!darkMode)}
+            onClick={toggleTheme}
             className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
           >
-            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
 
           {/* Notifications */}

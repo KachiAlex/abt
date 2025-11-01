@@ -6,6 +6,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { ContractorsProvider } from './contexts/ContractorsContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -157,11 +158,13 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <AuthProvider>
-          <ContractorsProvider>
-            <AppContent />
-          </ContractorsProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ContractorsProvider>
+              <AppContent />
+            </ContractorsProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </Router>
     </ErrorBoundary>
   );
