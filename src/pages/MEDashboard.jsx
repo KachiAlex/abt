@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
   XCircle, 
@@ -29,247 +29,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import { submissionAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import ReportDetailModal from '../components/Reports/ReportDetailModal';
 
-// Enhanced mock data for M&E dashboard
-const pendingApprovals = [
-  {
-    id: 'SUB-001',
-    type: 'milestone',
-    title: 'Phase 2: Road Expansion (Km 10-20) - Completion',
-    project: 'Aba North Road Network Expansion',
-    projectId: 'PRJ-2023-001',
-    contractor: 'Kreatix Infrastructure Ltd',
-    submittedDate: '2024-01-10',
-    submittedBy: 'Adebayo Johnson',
-    description: 'Completed 10km section of road expansion with asphalt laying and road markings. All quality tests passed.',
-    progress: 65,
-    mediaCount: 15,
-    priority: 'High',
-    dueDate: '2024-01-15',
-    location: 'Aba North LGA',
-    estimatedValue: '₦450M',
-    qualityScore: 4.5,
-    safetyCompliance: 'Excellent',
-    weatherImpact: 'None'
-  },
-  {
-    id: 'SUB-002',
-    type: 'progress',
-    title: 'Weekly Progress Update - Week 3',
-    project: 'Umuahia Healthcare Complex',
-    projectId: 'PRJ-2023-002',
-    contractor: 'Medical Facilities Nigeria',
-    submittedDate: '2024-01-09',
-    submittedBy: 'Sarah Okafor',
-    description: 'Foundation work completed, starting structural framework installation. Materials delivered on schedule.',
-    progress: 45,
-    mediaCount: 8,
-    priority: 'Medium',
-    dueDate: '2024-01-12',
-    location: 'Umuahia North LGA',
-    estimatedValue: '₦85M',
-    qualityScore: 4.2,
-    safetyCompliance: 'Good',
-    weatherImpact: 'Minor delays'
-  },
-  {
-    id: 'SUB-003',
-    type: 'issue',
-    title: 'Equipment Malfunction Report',
-    project: 'Aba South Water Treatment Plant',
-    projectId: 'PRJ-2023-003',
-    contractor: 'Aqua Systems Ltd',
-    submittedDate: '2024-01-08',
-    submittedBy: 'Michael Eze',
-    description: 'Primary treatment unit experiencing technical issues. Repair team dispatched. No safety concerns.',
-    progress: 85,
-    mediaCount: 3,
-    priority: 'High',
-    dueDate: '2024-01-10',
-    location: 'Aba South LGA',
-    estimatedValue: '₦0',
-    qualityScore: 4.8,
-    safetyCompliance: 'Excellent',
-    weatherImpact: 'None'
-  },
-  {
-    id: 'SUB-004',
-    type: 'safety',
-    title: 'Monthly Safety Inspection Report',
-    project: 'Aba North Road Network Expansion',
-    projectId: 'PRJ-2023-001',
-    contractor: 'Kreatix Infrastructure Ltd',
-    submittedDate: '2024-01-07',
-    submittedBy: 'Grace Okoro',
-    description: 'Comprehensive safety audit completed. All protocols followed. Minor recommendations for improvement.',
-    progress: 65,
-    mediaCount: 12,
-    priority: 'Medium',
-    dueDate: '2024-01-14',
-    location: 'Aba North LGA',
-    estimatedValue: '₦0',
-    qualityScore: 4.7,
-    safetyCompliance: 'Excellent',
-    weatherImpact: 'None'
-  },
-  {
-    id: 'SUB-005',
-    type: 'progress',
-    title: 'Q1 2024 Performance Report',
-    project: 'Industrial Complex Development',
-    projectId: 'PRJ-2024-001',
-    contractor: 'Test Industry Ltd',
-    submittedDate: '2024-01-15',
-    submittedBy: 'David Chen',
-    description: 'Quarterly performance report covering project milestones, budget utilization, and quality metrics. All targets exceeded.',
-    progress: 90,
-    mediaCount: 25,
-    priority: 'High',
-    dueDate: '2024-01-20',
-    location: 'Industrial Zone, Umuahia',
-    estimatedValue: '₦2.5B',
-    qualityScore: 4.9,
-    safetyCompliance: 'Outstanding',
-    weatherImpact: 'None'
-  },
-  {
-    id: 'SUB-006',
-    type: 'milestone',
-    title: 'Phase 3: Manufacturing Facility Completion',
-    project: 'Advanced Manufacturing Hub',
-    projectId: 'PRJ-2024-002',
-    contractor: 'Test Industry Ltd',
-    submittedDate: '2024-01-12',
-    submittedBy: 'Lisa Wang',
-    description: 'State-of-the-art manufacturing facility completed ahead of schedule. All equipment installed and tested successfully.',
-    progress: 100,
-    mediaCount: 18,
-    priority: 'High',
-    dueDate: '2024-01-15',
-    location: 'Industrial Zone, Aba',
-    estimatedValue: '₦3.2B',
-    qualityScore: 4.8,
-    safetyCompliance: 'Excellent',
-    weatherImpact: 'None'
-  },
-  {
-    id: 'SUB-007',
-    type: 'safety',
-    title: 'Annual Safety Compliance Report',
-    project: 'Test Industry Expansion Project',
-    projectId: 'PRJ-2024-003',
-    contractor: 'Test Industry Ltd',
-    submittedDate: '2024-01-10',
-    submittedBy: 'Robert Kim',
-    description: 'Comprehensive annual safety audit covering all facilities. Zero incidents recorded. Industry-leading safety standards maintained.',
-    progress: 95,
-    mediaCount: 30,
-    priority: 'Medium',
-    dueDate: '2024-01-25',
-    location: 'Multiple Sites',
-    estimatedValue: '₦0',
-    qualityScore: 5.0,
-    safetyCompliance: 'Outstanding',
-    weatherImpact: 'None'
-  }
-];
-
-const recentActivities = [
-  {
-    id: 1,
-    action: 'approved',
-    officer: 'John Doe',
-    item: 'Phase 1 Milestone - Aba North Road Network',
-    date: '2024-01-09',
-    project: 'PRJ-2023-001',
-    value: '₦200M',
-    icon: CheckCircle,
-    color: 'text-green-600'
-  },
-  {
-    id: 2,
-    action: 'flagged',
-    officer: 'Jane Smith',
-    item: 'Quality Issue - Umuahia Healthcare Center',
-    date: '2024-01-08',
-    project: 'PRJ-2023-002',
-    value: '₦0',
-    icon: Flag,
-    color: 'text-red-600'
-  },
-  {
-    id: 3,
-    action: 'reviewed',
-    officer: 'Mike Johnson',
-    item: 'Progress Update - Water Treatment Plant',
-    date: '2024-01-07',
-    project: 'PRJ-2023-003',
-    value: '₦50M',
-    icon: Eye,
-    color: 'text-blue-600'
-  },
-  {
-    id: 4,
-    action: 'inspected',
-    officer: 'Sarah Wilson',
-    item: 'Site Inspection - Healthcare Complex',
-    date: '2024-01-06',
-    project: 'PRJ-2023-002',
-    value: '₦0',
-    icon: Shield,
-    color: 'text-purple-600'
-  }
-];
-
-const upcomingInspections = [
-  {
-    id: 1,
-    project: 'Aba North Road Network',
-    type: 'Quality Inspection',
-    date: '2024-01-20',
-    time: '10:00 AM',
-    inspector: 'John Doe',
-    status: 'scheduled'
-  },
-  {
-    id: 2,
-    project: 'Umuahia Healthcare Complex',
-    type: 'Safety Audit',
-    date: '2024-01-22',
-    time: '2:00 PM',
-    inspector: 'Jane Smith',
-    status: 'confirmed'
-  },
-  {
-    id: 3,
-    project: 'Aba South Water Treatment',
-    type: 'Final Inspection',
-    date: '2024-01-25',
-    time: '9:00 AM',
-    inspector: 'Mike Johnson',
-    status: 'pending'
-  }
-];
-
-const performanceMetrics = {
-  thisWeek: {
-    reviewsCompleted: 47,
-    approvalsGiven: 42,
-    issuesFlagged: 5,
-    siteVisits: 8,
-    averageReviewTime: '2.3 hours',
-    qualityScore: 4.6
-  },
-  thisMonth: {
-    reviewsCompleted: 189,
-    approvalsGiven: 165,
-    issuesFlagged: 24,
-    siteVisits: 32,
-    averageReviewTime: '2.1 hours',
-    qualityScore: 4.5
-  }
-};
+// Mock data removed - now using API calls
 
 const typeStyles = {
   milestone: 'bg-green-50 text-green-700 border-green-200',
@@ -292,6 +56,7 @@ const typeIcons = {
 };
 
 export default function MEDashboard() {
+  const { user } = useAuth();
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [filterType, setFilterType] = useState('All Types');
   const [filterPriority, setFilterPriority] = useState('All Priorities');
@@ -301,12 +66,51 @@ export default function MEDashboard() {
   const [viewMode, setViewMode] = useState('week'); // week or month
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ pending: 0, underReview: 0, approved: 0, rejected: 0 });
+  const [recentActivities] = useState([]);
+  const [upcomingInspections] = useState([]);
+  const [performanceMetrics] = useState({
+    thisWeek: { reviewsCompleted: 0, approvalsGiven: 0, issuesFlagged: 0, siteVisits: 0, averageReviewTime: '0 hours', qualityScore: 0 },
+    thisMonth: { reviewsCompleted: 0, approvalsGiven: 0, issuesFlagged: 0, siteVisits: 0, averageReviewTime: '0 hours', qualityScore: 0 }
+  });
 
-  const filteredSubmissions = pendingApprovals.filter(submission => {
+  useEffect(() => {
+    let isMounted = true;
+    const loadSubmissions = async () => {
+      try {
+        setLoading(true);
+        const res = await submissionAPI.getAll();
+        if (res?.success && isMounted) {
+          setSubmissions(res.data?.submissions || []);
+          // Calculate stats from actual data
+          const all = res.data?.submissions || [];
+          setStats({
+            pending: all.filter(s => s.status === 'PENDING').length,
+            underReview: all.filter(s => s.status === 'UNDER_REVIEW').length,
+            approved: all.filter(s => s.status === 'APPROVED').length,
+            rejected: all.filter(s => s.status === 'REJECTED').length
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load submissions:', e);
+        setSubmissions([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    loadSubmissions();
+    return () => { isMounted = false; };
+  }, []);
+
+  const filteredSubmissions = submissions.filter(submission => {
+    const projectName = submission.project?.name || '';
+    const contractorName = submission.contractor?.companyName || '';
     const matchesSearch = submission.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         submission.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         submission.contractor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'All Types' || submission.type === filterType.toLowerCase();
+                         projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         contractorName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === 'All Types' || submission.type === filterType;
     const matchesPriority = filterPriority === 'All Priorities' || submission.priority === filterPriority;
     
     return matchesSearch && matchesType && matchesPriority;

@@ -72,13 +72,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signInWithMockData = (authData) => {
-    console.log('Signing in with mock data:', authData);
-    setUser(authData.user);
-    setToken(authData.token);
-    localStorage.setItem('gpt_auth', JSON.stringify(authData));
-  };
-
   const signOut = () => {
     setUser(null);
     setToken(null);
@@ -126,7 +119,6 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     signIn,
-    signInWithMockData,
     signOut,
     updateUser,
     isAuthenticated,
