@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { contractorAPI } from '../services/api';
+import { contractorAPI, authAPI } from '../services/api';
 
 const ContractorsContext = createContext();
 
@@ -76,12 +76,47 @@ export const ContractorsProvider = ({ children }) => {
 
   const addContractor = async (contractorData) => {
     try {
-      const response = await contractorAPI.create(contractorData);
+      // Step 1: Register the user first
+      const userRegistrationData = {
+        email: contractorData.email,
+        password: contractorData.password,
+        firstName: contractorData.contactPerson?.split(' ')[0] || contractorData.contactPerson,
+        lastName: contractorData.contactPerson?.split(' ').slice(1).join(' ') || '',
+        role: 'CONTRACTOR',
+        phone: contractorData.phone,
+      };
+
+      console.log('Registering user:', userRegistrationData);
+      const userResponse = await authAPI.register(userRegistrationData);
+      
+      if (!userResponse.success) {
+        throw new Error(userResponse.message || 'Failed to register user');
+      }
+
+      const userId = userResponse.data.user.id;
+      console.log('User registered successfully with ID:', userId);
+
+      // Step 2: Create contractor profile using the user ID
+      const contractorProfileData = {
+        userId: userId,
+        companyName: contractorData.companyName,
+        registrationNo: contractorData.registrationNumber,
+        contactPerson: contractorData.contactPerson,
+        companyEmail: contractorData.email,
+        companyPhone: contractorData.phone,
+        companyAddress: contractorData.address || `${contractorData.city}, ${contractorData.state}`,
+        yearsExperience: contractorData.yearsInBusiness,
+        specialization: contractorData.specialization ? [contractorData.specialization] : []
+      };
+
+      console.log('Creating contractor profile:', contractorProfileData);
+      const response = await contractorAPI.create(contractorProfileData);
+      
       if (response.success) {
         await loadContractors();
         return response.data.contractor;
       }
-      throw new Error(response.message || 'Failed to create contractor');
+      throw new Error(response.message || 'Failed to create contractor profile');
     } catch (error) {
       console.error('Error adding contractor:', error);
       throw error;
