@@ -29,7 +29,21 @@ export const ContractorsProvider = ({ children }) => {
           status: contractor.isVerified ? 'Active' : 'Inactive',
           projects: { completed: 0, ongoing: 0 },
           location: contractor.companyAddress || 'Not specified',
-          joinDate: contractor.createdAt ? (typeof contractor.createdAt.toDate === 'function' ? new Date(contractor.createdAt.toDate()).toISOString().split('T')[0] : new Date(contractor.createdAt).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+          joinDate: (() => {
+            if (!contractor.createdAt) return new Date().toISOString().split('T')[0];
+            try {
+              if (typeof contractor.createdAt.toDate === 'function') {
+                return new Date(contractor.createdAt.toDate()).toISOString().split('T')[0];
+              }
+              const date = new Date(contractor.createdAt);
+              if (!isNaN(date.getTime())) {
+                return date.toISOString().split('T')[0];
+              }
+            } catch (e) {
+              console.error('Error parsing date:', e);
+            }
+            return new Date().toISOString().split('T')[0];
+          })(),
           totalValue: '₦0',
           userId: contractor.userId,
           registrationNumber: contractor.registrationNo,
