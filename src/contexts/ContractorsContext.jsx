@@ -31,7 +31,9 @@ export const ContractorsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading contractors from API...');
       const response = await contractorAPI.getAll();
+      console.log('Load contractors response:', response);
       
       if (response.success && response.data && response.data.contractors) {
         // Transform API data to match frontend structure
