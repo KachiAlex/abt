@@ -39,8 +39,9 @@ const statusStyles = {
 export default function Projects() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
-  const [lgaFilter, setLgaFilter] = useState('All LGAs');
+  const [selectedLGAs, setSelectedLGAs] = useState([]); // Changed to array for multiple selection
   const [showFilters, setShowFilters] = useState(false);
+  const [showLGADropdown, setShowLGADropdown] = useState(false);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -68,10 +69,19 @@ export default function Projects() {
                          project.contractor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All Statuses' || project.status === statusFilter;
-    const matchesLGA = lgaFilter === 'All LGAs' || project.lga === lgaFilter;
+    // Allow matching if no LGAs selected (show all) or if project's LGA is in selected list
+    const matchesLGA = selectedLGAs.length === 0 || selectedLGAs.includes(project.lga);
     
     return matchesSearch && matchesStatus && matchesLGA;
   });
+
+  const handleLGAToggle = (lga) => {
+    setSelectedLGAs(prev => 
+      prev.includes(lga) 
+        ? prev.filter(item => item !== lga) 
+        : [...prev, lga]
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -132,15 +142,38 @@ export default function Projects() {
                 ))}
               </select>
 
-              <select
-                value={lgaFilter}
-                onChange={(e) => setLgaFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent"
-              >
-                {lgaOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              {/* LGA Multi-select dropdown */}
+              <div className="relative">
+                <select
+                  onChange={() => {}} // Prevent default behavior
+                  value=""
+                  onClick={() => setShowLGADropdown(!showLGADropdown)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500 focus:border-transparent cursor-pointer"
+                >
+                  <option value="">
+                    {selectedLGAs.length === 0 
+                      ? 'All LGAs' 
+                      : `${selectedLGAs.length} selected`}
+                  </option>
+                </select>
+                {showLGADropdown && (
+                  <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-64 max-h-96 overflow-y-auto">
+                    <div className="p-4 space-y-2">
+                      {lgaOptions.slice(1).map(lga => (
+                        <label key={lga} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                          <input
+                            type="checkbox"
+                            checked={selectedLGAs.includes(lga)}
+                            onChange={() => handleLGAToggle(lga)}
+                            className="w-4 h-4 text-abia-600 border-gray-300 rounded focus:ring-abia-500"
+                          />
+                          <span className="text-sm text-gray-700">{lga}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
