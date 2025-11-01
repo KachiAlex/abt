@@ -39,30 +39,32 @@ export default function StatsCard({
         'bg-purple-500'
       )}></div>
       
-      <div className="relative flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{title}</p>
-          <div className="flex items-baseline mt-3">
-            <p className="text-4xl font-extrabold text-gray-900">{value}</p>
+      <div className="relative flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">{title}</p>
+          <div className={clsx('p-3 rounded-xl shadow-lg transform group-hover:scale-110 transition-transform duration-300', colorClasses[color])}>
+            <Icon className="h-6 w-6" />
+          </div>
+        </div>
+        
+        <div className="flex flex-col">
+          <div className="flex items-baseline flex-wrap gap-2 mb-2">
+            <p className="text-5xl font-extrabold text-gray-900 leading-none">{value}</p>
             {trendValue && (
               <div className={clsx(
-                'ml-3 flex items-center text-sm font-semibold px-2 py-1 rounded-lg',
+                'flex items-center text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap',
                 isPositiveTrend ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               )}>
                 {isPositiveTrend ? (
-                  <TrendingUp className="h-4 w-4 mr-1" />
+                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
                 ) : (
-                  <TrendingDown className="h-4 w-4 mr-1" />
+                  <TrendingDown className="h-3.5 w-3.5 mr-1" />
                 )}
                 {trendValue}
               </div>
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-3 font-medium">{subtitle}</p>
-        </div>
-        
-        <div className={clsx('p-4 rounded-2xl shadow-lg transform group-hover:scale-110 transition-transform duration-300', colorClasses[color])}>
-          <Icon className="h-10 w-10" />
+          <p className="text-sm text-gray-600 font-medium mt-2">{subtitle}</p>
         </div>
       </div>
     </div>
