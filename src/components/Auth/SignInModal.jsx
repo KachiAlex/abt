@@ -99,29 +99,29 @@ export default function SignInModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[95vh] overflow-y-auto">
-        <div className="p-6">
+      <div className="bg-white rounded-xl w-full max-w-md max-h-[95vh] overflow-y-auto">
+        <div className="p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Sign In</h2>
-              <p className="text-gray-600">Access the Abia Project Tracker</p>
+              <h2 className="text-3xl font-bold text-gray-900">Sign In</h2>
+              <p className="text-base text-gray-600 mt-1">Access the Abia Project Tracker</p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
 
           {/* Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start space-x-3">
-              <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-8">
+            <div className="flex items-start space-x-4">
+              <Shield className="h-6 w-6 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-blue-900">Sign in</h4>
-                <p className="text-sm text-blue-700 mt-1">
+                <h4 className="text-base font-medium text-blue-900">Sign in</h4>
+                <p className="text-base text-blue-700 mt-2">
                   Use your email and password provided by the administrator.
                 </p>
               </div>
@@ -130,10 +130,10 @@ export default function SignInModal({ isOpen, onClose }) {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-                <p className="text-sm text-red-700">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-5 mb-8">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <p className="text-base text-red-700">{error}</p>
               </div>
             </div>
           )}
@@ -141,16 +141,16 @@ export default function SignInModal({ isOpen, onClose }) {
           {/* Sign In Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 mb-3">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent text-base"
                   placeholder="Enter your email address"
                   required
                 />
@@ -158,25 +158,25 @@ export default function SignInModal({ isOpen, onClose }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 mb-3">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent"
+                  className="w-full pl-11 pr-12 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-abia-500 focus:border-transparent text-base"
                   placeholder="Enter your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
