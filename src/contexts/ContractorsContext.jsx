@@ -48,7 +48,7 @@ export const ContractorsProvider = ({ children }) => {
           status: contractor.isVerified ? 'Active' : 'Inactive',
           projects: { completed: 0, ongoing: 0 }, // Will be populated from projects data
           location: contractor.companyAddress || 'Not specified',
-          joinDate: contractor.createdAt ? new Date(contractor.createdAt.toDate()).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          joinDate: contractor.createdAt ? (typeof contractor.createdAt.toDate === 'function' ? new Date(contractor.createdAt.toDate()).toISOString().split('T')[0] : new Date(contractor.createdAt).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
           totalValue: '₦0',
           // Store full data for reference
           userId: contractor.userId,
