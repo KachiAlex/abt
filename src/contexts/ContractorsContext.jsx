@@ -47,9 +47,14 @@ export const ContractorsProvider = ({ children }) => {
         setContractors([]);
       }
     } catch (error) {
-      console.error('Error loading contractors:', error);
-      setError(error.message);
-      setContractors([]);
+      // Silently handle auth errors when not logged in (e.g., on public pages)
+      if (error.message && error.message.includes('Authentication expired')) {
+        setContractors([]);
+      } else {
+        console.error('Error loading contractors:', error);
+        setError(error.message);
+        setContractors([]);
+      }
     } finally {
       setLoading(false);
     }
