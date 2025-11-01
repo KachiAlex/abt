@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Upload, 
   Camera, 
@@ -27,174 +27,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import { projectAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
-// Enhanced mock data for contractor's projects
-const contractorProjects = [
-  {
-    id: 'PRJ-2023-001',
-    name: 'Aba North Road Network Expansion',
-    lga: 'Aba North',
-    budget: '₦1.2B',
-    progress: 65,
-    status: 'In Progress',
-    dueDate: '2024-06-30',
-    startDate: '2023-01-15',
-    nextMilestone: 'Phase 2: Road Expansion (Km 10-20)',
-    milestoneProgress: 65,
-    lastUpdate: '2 days ago',
-    pendingApprovals: 1,
-    totalMilestones: 5,
-    completedMilestones: 3,
-    priority: 'High',
-    category: 'Transportation',
-    manager: 'Adebayo Johnson',
-    weatherDelay: 0,
-    qualityScore: 4.5,
-    safetyIncidents: 0
-  },
-  {
-    id: 'PRJ-2023-005',
-    name: 'Umuahia Healthcare Complex',
-    lga: 'Umuahia North',
-    budget: '₦850M',
-    progress: 40,
-    status: 'In Progress',
-    dueDate: '2024-08-15',
-    startDate: '2023-03-01',
-    nextMilestone: 'Phase 1: Foundation & Structure',
-    milestoneProgress: 40,
-    lastUpdate: '1 week ago',
-    pendingApprovals: 0,
-    totalMilestones: 4,
-    completedMilestones: 1,
-    priority: 'Medium',
-    category: 'Healthcare',
-    manager: 'Sarah Okafor',
-    weatherDelay: 3,
-    qualityScore: 4.2,
-    safetyIncidents: 1
-  },
-  {
-    id: 'PRJ-2023-008',
-    name: 'Aba South Water Treatment Plant',
-    lga: 'Aba South',
-    budget: '₦650M',
-    progress: 85,
-    status: 'Near Completion',
-    dueDate: '2024-03-30',
-    startDate: '2022-10-01',
-    nextMilestone: 'Final Testing & Commissioning',
-    milestoneProgress: 85,
-    lastUpdate: 'Yesterday',
-    pendingApprovals: 2,
-    totalMilestones: 6,
-    completedMilestones: 5,
-    priority: 'High',
-    category: 'Water & Sanitation',
-    manager: 'Michael Eze',
-    weatherDelay: 0,
-    qualityScore: 4.8,
-    safetyIncidents: 0
-  }
-];
-
-const recentActivities = [
-  {
-    id: 1,
-    type: 'milestone_completed',
-    title: 'Phase 3 Milestone Completed',
-    project: 'Aba North Road Network Expansion',
-    description: 'Successfully completed road surfacing for 5km stretch',
-    date: '2024-01-10',
-    status: 'Approved',
-    icon: CheckCircle,
-    color: 'text-green-600 bg-green-50'
-  },
-  {
-    id: 2,
-    type: 'update_submitted',
-    title: 'Weekly Progress Report Submitted',
-    project: 'Umuahia Healthcare Complex',
-    description: 'Foundation work progress with 12 photos uploaded',
-    date: '2024-01-08',
-    status: 'Under Review',
-    icon: FileText,
-    color: 'text-blue-600 bg-blue-50'
-  },
-  {
-    id: 3,
-    type: 'issue_reported',
-    title: 'Material Delay Reported',
-    project: 'Aba South Water Treatment Plant',
-    description: 'Specialized equipment delivery delayed by 5 days',
-    date: '2024-01-05',
-    status: 'Acknowledged',
-    icon: AlertTriangle,
-    color: 'text-yellow-600 bg-yellow-50'
-  },
-  {
-    id: 4,
-    type: 'approval_received',
-    title: 'Budget Variation Approved',
-    project: 'Umuahia Healthcare Complex',
-    description: 'Additional ₦50M approved for enhanced specifications',
-    date: '2024-01-03',
-    status: 'Approved',
-    icon: DollarSign,
-    color: 'text-green-600 bg-green-50'
-  }
-];
-
-const notifications = [
-  {
-    id: 1,
-    title: 'Milestone Review Due',
-    message: 'Phase 2 milestone for Aba North Road project needs review submission',
-    time: '2 hours ago',
-    type: 'deadline',
-    urgent: true
-  },
-  {
-    id: 2,
-    title: 'Payment Released',
-    message: '₦180M payment has been released for completed milestones',
-    time: '1 day ago',
-    type: 'payment',
-    urgent: false
-  },
-  {
-    id: 3,
-    title: 'Site Inspection Scheduled',
-    message: 'M&E team will visit Umuahia Healthcare site on Friday 2PM',
-    time: '2 days ago',
-    type: 'inspection',
-    urgent: false
-  }
-];
-
-const upcomingDeadlines = [
-  {
-    project: 'Aba North Road Network',
-    milestone: 'Phase 2 Completion',
-    dueDate: '2024-02-15',
-    daysLeft: 15,
-    status: 'on-track'
-  },
-  {
-    project: 'Aba South Water Treatment',
-    milestone: 'Final Testing',
-    dueDate: '2024-02-28',
-    daysLeft: 28,
-    status: 'ahead'
-  },
-  {
-    project: 'Umuahia Healthcare',
-    milestone: 'Foundation Review',
-    dueDate: '2024-02-05',
-    daysLeft: 5,
-    status: 'at-risk'
-  }
-];
+// Mock data removed - now using API calls
 
 const statusStyles = {
   'Completed': 'status-completed',
@@ -205,18 +41,45 @@ const statusStyles = {
 };
 
 export default function ContractorDashboard() {
+  const { user } = useAuth();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [contractorProjects, setContractorProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [recentActivities] = useState([]);
+  const [notifications] = useState([]);
+  const [upcomingDeadlines] = useState([]);
 
-  const totalBudget = contractorProjects.reduce((sum, project) => {
-    return sum + parseFloat(project.budget.replace('₦', '').replace('B', '000000000').replace('M', '000000'));
-  }, 0);
+  useEffect(() => {
+    let isMounted = true;
+    const loadProjects = async () => {
+      try {
+        setLoading(true);
+        const res = await projectAPI.getAll();
+        if (res?.success && isMounted) {
+          setContractorProjects(res.data?.projects || []);
+        }
+      } catch (e) {
+        console.error('Failed to load contractor projects:', e);
+        setContractorProjects([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    loadProjects();
+    return () => { isMounted = false; };
+  }, []);
 
-  const avgProgress = Math.round(contractorProjects.reduce((sum, project) => sum + project.progress, 0) / contractorProjects.length);
-  const totalMilestones = contractorProjects.reduce((sum, project) => sum + project.totalMilestones, 0);
-  const completedMilestones = contractorProjects.reduce((sum, project) => sum + project.completedMilestones, 0);
+  const totalBudget = contractorProjects.reduce((sum, project) => sum + (project.budget || 0), 0);
+  const avgProgress = contractorProjects.length > 0 ? Math.round(contractorProjects.reduce((sum, project) => sum + (project.progress || 0), 0) / contractorProjects.length) : 0;
+  const totalMilestones = 0; // Will be calculated from actual milestones data
+  const completedMilestones = 0; // Will be calculated from actual milestones data
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
