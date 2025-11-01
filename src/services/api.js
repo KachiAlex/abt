@@ -50,14 +50,18 @@ const apiFetch = async (endpoint, options = {}) => {
     
     clearTimeout(timeoutId);
     
-    // Handle 401 Unauthorized - token expired or invalid
+    const data = await response.json();
+
+    // Handle 401 Unauthorized - check if it's a login failure or token expiry
     if (response.status === 401) {
+      // For login endpoint, return the actual error message from backend
+      if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register')) {
+        throw new Error(data.message || 'Authentication failed. Please check your credentials.');
+      }
+      // For authenticated endpoints, it's likely a token expiry
       localStorage.removeItem('gpt_auth');
-      // Don't redirect here - let React Router handle it via AuthContext
       throw new Error('Authentication expired. Please log in again.');
     }
-
-    const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
