@@ -34,9 +34,31 @@ export default function Dashboard() {
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
+      // Check cache first (5 minute cache)
+      const cacheKey = 'dashboard_stats_cache';
+      const cacheTime = 5 * 60 * 1000; // 5 minutes
       try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < cacheTime) {
+            if (isMounted) {
+              setStats(data);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
         const res = await dashboardAPI.getStats();
-        if (res?.success && isMounted) setStats(res.data?.stats || null);
+        if (res?.success && isMounted) {
+          setStats(res.data?.stats || null);
+          // Cache the result
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: res.data?.stats,
+            timestamp: Date.now()
+          }));
+        }
       } catch (e) {
         if (isMounted) setError(e.message || 'Failed to load stats');
       } finally {
