@@ -18,10 +18,31 @@ export default function RecentProjects() {
   useEffect(() => {
     let isMounted = true;
     const loadProjects = async () => {
+      // Check cache first (3 minute cache for recent projects)
+      const cacheKey = 'recent_projects_cache';
+      const cacheTime = 3 * 60 * 1000; // 3 minutes
       try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < cacheTime) {
+            if (isMounted) {
+              setProjects(data);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
         const res = await projectAPI.getAll({ limit: 5 });
         if (res?.success && isMounted) {
-          setProjects(res.data?.projects || []);
+          const projectsData = res.data?.projects || [];
+          setProjects(projectsData);
+          // Cache the result
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: projectsData,
+            timestamp: Date.now()
+          }));
         }
       } catch (e) {
         console.error('Failed to load recent projects:', e);

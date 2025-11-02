@@ -49,10 +49,31 @@ export default function Projects() {
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
+      // Check cache first (5 minute cache for projects list)
+      const cacheKey = 'projects_list_cache';
+      const cacheTime = 5 * 60 * 1000; // 5 minutes
       try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < cacheTime) {
+            if (isMounted) {
+              setProjects(data);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
         const res = await projectAPI.getAll();
         if (res?.success && isMounted) {
-          setProjects(res.data?.projects || []);
+          const projectsData = res.data?.projects || [];
+          setProjects(projectsData);
+          // Cache the result
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: projectsData,
+            timestamp: Date.now()
+          }));
         }
       } catch (e) {
         if (isMounted) setError(e.message || 'Failed to load projects');

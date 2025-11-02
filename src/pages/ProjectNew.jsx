@@ -218,6 +218,10 @@ export default function ProjectNew() {
       const response = await projectAPI.create(submissionData);
       
       if (response.success) {
+        // Invalidate cache so new project appears immediately
+        localStorage.removeItem('projects_list_cache');
+        localStorage.removeItem('dashboard_stats_cache');
+        localStorage.removeItem('recent_projects_cache');
         showSuccess('Project created successfully!');
         navigate('/projects');
       } else {

@@ -9,6 +9,25 @@ export const ContractorsProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const loadContractors = async () => {
+    // Check cache first (5 minute cache)
+    const cacheKey = 'contractors_cache';
+    const cacheTime = 5 * 60 * 1000; // 5 minutes
+    
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < cacheTime) {
+          console.log('Loading contractors from cache...');
+          setContractors(data);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.log('Error parsing cached contractors, fetching fresh data');
+      }
+    }
+    
     try {
       setLoading(true);
       setError(null);
@@ -54,6 +73,11 @@ export const ContractorsProvider = ({ children }) => {
         }));
         console.log('Transformed contractors:', transformed);
         setContractors(transformed);
+        // Cache the result
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: transformed,
+          timestamp: Date.now()
+        }));
       } else {
         console.log('No contractors found in response');
         setContractors([]);
@@ -132,6 +156,9 @@ export const ContractorsProvider = ({ children }) => {
       const response = await contractorAPI.create(contractorProfileData);
       
       if (response.success) {
+        // Invalidate cache
+        localStorage.removeItem('contractors_cache');
+        localStorage.removeItem('dashboard_stats_cache');
         await loadContractors();
         return response.data.contractor;
       }
@@ -146,6 +173,9 @@ export const ContractorsProvider = ({ children }) => {
     try {
       const response = await contractorAPI.update(id, updates);
       if (response.success) {
+        // Invalidate cache
+        localStorage.removeItem('contractors_cache');
+        localStorage.removeItem('dashboard_stats_cache');
         await loadContractors();
         return response.data.contractor;
       }
