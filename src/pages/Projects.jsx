@@ -69,8 +69,15 @@ export default function Projects() {
                          project.contractor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All Statuses' || project.status === statusFilter;
-    // Allow matching if no LGAs selected (show all) or if project's LGA is in selected list
-    const matchesLGA = selectedLGAs.length === 0 || selectedLGAs.includes(project.lga);
+    // Allow matching if no LGAs selected (show all) or if project's LGA (array or string) intersects with selected list
+    let matchesLGA = true;
+    if (selectedLGAs.length > 0) {
+      if (Array.isArray(project.lga)) {
+        matchesLGA = project.lga.some(lga => selectedLGAs.includes(lga));
+      } else {
+        matchesLGA = selectedLGAs.includes(project.lga);
+      }
+    }
     
     return matchesSearch && matchesStatus && matchesLGA;
   });
@@ -238,7 +245,9 @@ export default function Projects() {
                       <p className="text-sm text-gray-500 mt-1">Updated: {project.lastUpdate}</p>
                     </div>
                   </td>
-                  <td className="py-5 px-4 text-base text-gray-600">{project.lga}</td>
+                  <td className="py-5 px-4 text-base text-gray-600">
+                    {Array.isArray(project.lga) ? project.lga.join(', ') : project.lga}
+                  </td>
                   <td className="py-5 px-4 text-base text-gray-600">{project.contractor}</td>
                   <td className="py-5 px-4 text-base text-gray-600">{project.timeline}</td>
                   <td className="py-5 px-4 text-base font-medium text-gray-900">{project.budget}</td>
@@ -300,7 +309,7 @@ export default function Projects() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center text-gray-600">
                   <MapPin className="h-3 w-3 mr-1" />
-                  {project.lga}
+                  {Array.isArray(project.lga) ? project.lga.join(', ') : project.lga}
                 </div>
                 <div className="flex items-center text-gray-600">
                   <User className="h-3 w-3 mr-1" />

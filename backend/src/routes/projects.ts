@@ -78,9 +78,7 @@ router.get('/', verifyToken, async (req, res) => {
     if (category) {
       query = query.where('category', '==', category);
     }
-    if (lga) {
-      query = query.where('lga', '==', lga);
-    }
+    // Note: LGA filter removed from query since it can be array or string
     if (priority) {
       query = query.where('priority', '==', priority);
     }
@@ -88,29 +86,41 @@ router.get('/', verifyToken, async (req, res) => {
       query = query.where('contractorId', '==', contractorId);
     }
 
-    // Apply pagination
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
-
-    query = query.offset(offset).limit(limitNum);
-
+    // Get all projects (we'll filter LGA and apply pagination in-memory)
     const snapshot = await query.get();
     let projects = snapshot.docs.map((doc: any) => doc.data() as Project);
+
+    // Apply LGA filter (support both single and array LGAs)
+    if (lga) {
+      const lgaFilter = Array.isArray(lga) ? lga : [lga];
+      projects = projects.filter((project: any) => {
+        if (Array.isArray(project.lga)) {
+          // If project has multiple LGAs, check if any match
+          return project.lga.some((pLga: string) => lgaFilter.includes(pLga));
+        } else {
+          // If project has single LGA, check if it matches
+          return lgaFilter.includes(project.lga);
+        }
+      });
+    }
 
     // Apply search filter
     if (search) {
       const searchTerm = (search as string).toLowerCase();
-      projects = projects.filter((project: any) => 
-        project.name.toLowerCase().includes(searchTerm) ||
-        project.description.toLowerCase().includes(searchTerm) ||
-        project.lga.toLowerCase().includes(searchTerm)
-      );
+      projects = projects.filter((project: any) => {
+        const lgaText = Array.isArray(project.lga) ? project.lga.join(' ') : project.lga;
+        return project.name.toLowerCase().includes(searchTerm) ||
+               project.description.toLowerCase().includes(searchTerm) ||
+               lgaText.toLowerCase().includes(searchTerm);
+      });
     }
 
-    // Get total count for pagination
-    const totalSnapshot = await db.collection(Collections.PROJECTS).get();
-    const total = totalSnapshot.size;
+    // Apply pagination
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const total = projects.length; // Total after filtering
+    const offset = (pageNum - 1) * limitNum;
+    projects = projects.slice(offset, offset + limitNum);
 
     return res.json({
       success: true,

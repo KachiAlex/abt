@@ -223,37 +223,45 @@ router.get('/lga-performance', verifyToken, async (_req, res) => {
     const projectsSnapshot = await db.collection(Collections.PROJECTS).get();
     const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
 
-    // Group projects by LGA
+    // Group projects by LGA (handle both string and array LGAs)
     const lgaData = projects.reduce((acc, project) => {
-      const lga = project.lga;
-      if (!acc[lga]) {
-        acc[lga] = {
-          lga,
-          totalProjects: 0,
-          completedProjects: 0,
-          activeProjects: 0,
-          totalBudget: 0,
-          spentBudget: 0,
-          averageProgress: 0
-        };
-      }
+      const lgas = Array.isArray(project.lga) ? project.lga : [project.lga];
       
-      acc[lga].totalProjects++;
-      acc[lga].totalBudget += project.budget;
-      acc[lga].spentBudget += project.spentBudget;
-      
-      if (project.status === ProjectStatus.COMPLETED) {
-        acc[lga].completedProjects++;
-      } else if (project.status === ProjectStatus.IN_PROGRESS) {
-        acc[lga].activeProjects++;
-      }
+      lgas.forEach(lga => {
+        if (!acc[lga]) {
+          acc[lga] = {
+            lga,
+            totalProjects: 0,
+            completedProjects: 0,
+            activeProjects: 0,
+            totalBudget: 0,
+            spentBudget: 0,
+            averageProgress: 0
+          };
+        }
+        
+        acc[lga].totalProjects++;
+        acc[lga].totalBudget += project.budget;
+        acc[lga].spentBudget += project.spentBudget;
+        
+        if (project.status === ProjectStatus.COMPLETED) {
+          acc[lga].completedProjects++;
+        } else if (project.status === ProjectStatus.IN_PROGRESS) {
+          acc[lga].activeProjects++;
+        }
+      });
       
       return acc;
     }, {} as any);
 
     // Calculate average progress for each LGA
     Object.keys(lgaData).forEach(lga => {
-      const lgaProjects = projects.filter(p => p.lga === lga);
+      const lgaProjects = projects.filter(p => {
+        if (Array.isArray(p.lga)) {
+          return p.lga.includes(lga);
+        }
+        return p.lga === lga;
+      });
       lgaData[lga].averageProgress = lgaProjects.length > 0 
         ? lgaProjects.reduce((sum, p) => sum + p.progress, 0) / lgaProjects.length 
         : 0;

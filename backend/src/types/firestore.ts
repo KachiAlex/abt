@@ -161,7 +161,7 @@ export interface Project {
   name: string;
   description: string;
   category: ProjectCategory;
-  lga: string;
+  lga: string | string[]; // Support both single LGA and multiple LGAs
   priority: Priority;
   status: ProjectStatus;
   progress: number;

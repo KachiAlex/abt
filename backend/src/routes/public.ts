@@ -46,11 +46,12 @@ router.get('/projects', async (req, res) => {
     // Apply search filter
     if (search) {
       const searchTerm = (search as string).toLowerCase();
-      projects = projects.filter(project => 
-        project.name.toLowerCase().includes(searchTerm) ||
-        project.description.toLowerCase().includes(searchTerm) ||
-        project.lga.toLowerCase().includes(searchTerm)
-      );
+      projects = projects.filter(project => {
+        const lgaText = Array.isArray(project.lga) ? project.lga.join(' ') : project.lga;
+        return project.name.toLowerCase().includes(searchTerm) ||
+               project.description.toLowerCase().includes(searchTerm) ||
+               lgaText.toLowerCase().includes(searchTerm);
+      });
     }
 
     // Get contractor information for each project
@@ -285,38 +286,41 @@ router.get('/projects-by-lga', async (_req, res) => {
       .get();
     const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
 
-    // Group projects by LGA
+    // Group projects by LGA (handle both string and array LGAs)
     const projectsByLGA = projects.reduce((acc, project) => {
-      const lga = project.lga;
-      if (!acc[lga]) {
-        acc[lga] = {
-          lga,
-          count: 0,
-          totalBudget: 0,
-          completedCount: 0,
-          activeCount: 0,
-          projects: []
-        };
-      }
+      const lgas = Array.isArray(project.lga) ? project.lga : [project.lga];
       
-      acc[lga].count++;
-      acc[lga].totalBudget += project.budget;
-      
-      if (project.status === ProjectStatus.COMPLETED) {
-        acc[lga].completedCount++;
-      } else if (project.status === ProjectStatus.IN_PROGRESS) {
-        acc[lga].activeCount++;
-      }
-      
-      acc[lga].projects.push({
-        id: project.id,
-        name: project.name,
-        description: project.description,
-        status: project.status,
-        progress: project.progress,
-        budget: project.budget,
-        startDate: project.startDate,
-        expectedEndDate: project.expectedEndDate
+      lgas.forEach(lga => {
+        if (!acc[lga]) {
+          acc[lga] = {
+            lga,
+            count: 0,
+            totalBudget: 0,
+            completedCount: 0,
+            activeCount: 0,
+            projects: []
+          };
+        }
+        
+        acc[lga].count++;
+        acc[lga].totalBudget += project.budget;
+        
+        if (project.status === ProjectStatus.COMPLETED) {
+          acc[lga].completedCount++;
+        } else if (project.status === ProjectStatus.IN_PROGRESS) {
+          acc[lga].activeCount++;
+        }
+        
+        acc[lga].projects.push({
+          id: project.id,
+          name: project.name,
+          description: project.description,
+          status: project.status,
+          progress: project.progress,
+          budget: project.budget,
+          startDate: project.startDate,
+          expectedEndDate: project.expectedEndDate
+        });
       });
       
       return acc;
@@ -380,12 +384,13 @@ router.get('/projects/search', async (req, res) => {
 
     // Apply search filter
     const searchTerm = (q as string).toLowerCase();
-    const searchResults = projects.filter(project => 
-      project.name.toLowerCase().includes(searchTerm) ||
-      project.description.toLowerCase().includes(searchTerm) ||
-      project.lga.toLowerCase().includes(searchTerm) ||
-      project.beneficiaries?.toLowerCase().includes(searchTerm)
-    );
+    const searchResults = projects.filter(project => {
+      const lgaText = Array.isArray(project.lga) ? project.lga.join(' ') : project.lga;
+      return project.name.toLowerCase().includes(searchTerm) ||
+             project.description.toLowerCase().includes(searchTerm) ||
+             lgaText.toLowerCase().includes(searchTerm) ||
+             project.beneficiaries?.toLowerCase().includes(searchTerm);
+    });
 
     return res.json({
       success: true,
