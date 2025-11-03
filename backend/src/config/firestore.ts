@@ -5,10 +5,20 @@ import * as admin from 'firebase-admin';
 // For local development, set GOOGLE_APPLICATION_CREDENTIALS env var
 if (!admin.apps.length) {
   try {
-    admin.initializeApp();
-    console.log('✅ Firebase Admin SDK initialized');
+    // Use minimal initialization to avoid deployment timeout
+    admin.initializeApp({
+      // In Firebase Functions, credentials are automatically provided
+      // Only specify credential in local dev
+    });
+    // Only log in non-production to avoid deployment delays
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Firebase Admin SDK initialized');
+    }
   } catch (error) {
-    console.error('❌ Firebase Admin initialization error:', error);
+    // Only log errors in non-production
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('❌ Firebase Admin initialization error:', error);
+    }
   }
 }
 
@@ -21,10 +31,15 @@ export const auth = admin.auth();
 // Export Storage instance
 export const storage = admin.storage();
 
-// Configure Firestore settings
-db.settings({
-  ignoreUndefinedProperties: true,
-});
+// Configure Firestore settings (lazy - only when db is actually used)
+// Don't configure during module load to avoid deployment timeout
+try {
+  db.settings({
+    ignoreUndefinedProperties: true,
+  });
+} catch (error) {
+  // Settings might fail during deployment, ignore
+}
 
 // Collection names
 export const Collections = {

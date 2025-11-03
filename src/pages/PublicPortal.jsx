@@ -13,7 +13,8 @@ import {
   ExternalLink,
   Phone,
   Mail,
-  Globe
+  Globe,
+  AlertTriangle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
@@ -36,6 +37,7 @@ export default function PublicPortal() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({ total: 0, active: 0, completed: 0, totalBudget: 0 });
 
   useEffect(() => {
@@ -61,6 +63,15 @@ export default function PublicPortal() {
         }
       } catch (e) {
         console.error('Failed to load public projects:', e);
+        if (isMounted) {
+          let errorMessage = e.message || 'Failed to load projects';
+          if (e.message && e.message.includes('Service Unavailable')) {
+            errorMessage = 'Unable to connect to the server. Please check if the API server is running.';
+          } else if (e.message && e.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again later.';
+          }
+          setError(errorMessage);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -84,10 +95,10 @@ export default function PublicPortal() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <span className="text-abia-600 font-bold text-sm">APT</span>
+              <span className="text-abia-600 font-bold text-sm">GPT</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold">Abia Project Tracker</h1>
+                <h1 className="text-xl font-bold">Government Project Tracker</h1>
                 <p className="text-abia-100 text-sm">Public Transparency Portal</p>
               </div>
             </div>
@@ -187,6 +198,19 @@ export default function PublicPortal() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div>
+                <h3 className="text-sm font-medium text-red-900">Error Loading Projects</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
           {loading ? (
@@ -266,9 +290,9 @@ export default function PublicPortal() {
         <footer className="bg-white rounded-lg shadow-sm border p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">About APT</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">About GPT</h3>
               <p className="text-gray-600 text-sm mb-4">
-                The Abia Project Tracker promotes transparency and accountability in government projects across Abia State.
+                The Government Project Tracker promotes transparency and accountability in government projects across Abia State.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-abia-600 hover:text-abia-700">

@@ -15,6 +15,7 @@ import ProjectNew from './pages/ProjectNew';
 import Contractors from './pages/Contractors';
 import ContractorDashboard from './pages/ContractorDashboard';
 import ContractorNew from './pages/ContractorNew';
+import MEOfficerNew from './pages/MEOfficerNew';
 import MEDashboard from './pages/MEDashboard';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
@@ -46,6 +47,7 @@ function AppContent() {
     if (location.pathname.startsWith('/projects/')) return 'Project Details';
     if (location.pathname === '/contractors') return 'Contractors';
     if (location.pathname === '/contractors/new') return 'Add New Contractor';
+    if (location.pathname === '/me-officers/new') return 'Register M&E Officer';
     if (location.pathname === '/contractor/dashboard') return 'Contractor Dashboard';
     if (location.pathname === '/me/dashboard') return 'M&E Dashboard';
     if (location.pathname === '/public') return 'Public Portal';
@@ -106,6 +108,11 @@ function AppContent() {
             <Route path="/contractors/new" element={
               <ProtectedRoute roles={['GOVERNMENT_ADMIN']}>
                 <ContractorNew />
+              </ProtectedRoute>
+            } />
+            <Route path="/me-officers/new" element={
+              <ProtectedRoute roles={['GOVERNMENT_ADMIN']}>
+                <MEOfficerNew />
               </ProtectedRoute>
             } />
             <Route path="/contractor/dashboard" element={

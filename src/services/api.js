@@ -49,22 +49,84 @@ const apiFetch = async (endpoint, options = {}) => {
     });
     
     clearTimeout(timeoutId);
-    
-    const data = await response.json();
 
-    // Handle 401 Unauthorized - check if it's a login failure or token expiry
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type') || '';
+    let data;
+
+    // Handle non-JSON responses (e.g., HTML error pages)
+    if (contentType.includes('application/json')) {
+      try {
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          // Empty response
+          data = {};
+        } else {
+          try {
+            data = JSON.parse(text);
+          } catch (parseError) {
+            // JSON parsing failed - likely HTML or other content
+            console.error('Failed to parse JSON response:', text.substring(0, 200));
+            
+            // Handle specific status codes
+            if (response.status === 503) {
+              throw new Error('Service Unavailable: The backend server is not running or unavailable. Please check if the API server is running.');
+            }
+            if (response.status === 404) {
+              throw new Error('API endpoint not found. Please check if the API server is configured correctly.');
+            }
+            if (response.status >= 500) {
+              throw new Error(`Server Error (${response.status}): The backend server encountered an error. Please try again later.`);
+            }
+            
+            throw new Error(`Server returned invalid response. Status: ${response.status}`);
+          }
+        }
+      } catch (error) {
+        // If error was already formatted, re-throw it
+        if (error.message && (error.message.includes('Service Unavailable') || error.message.includes('API endpoint') || error.message.includes('Server Error'))) {
+          throw error;
+        }
+        console.error('Error reading response:', error);
+        throw new Error(`Failed to read server response. Status: ${response.status}`);
+      }
+    } else {
+      // Response is not JSON (likely HTML error page)
+      const text = await response.text();
+      console.error('Non-JSON response received:', text.substring(0, 200));
+      
+      // Handle specific status codes
+      if (response.status === 503) {
+        throw new Error('Service Unavailable: The backend server is not running or unavailable. Please check if the API server is running.');
+      }
+      if (response.status === 404) {
+        throw new Error('API endpoint not found. Please check if the API server is configured correctly.');
+      }
+      if (response.status >= 500) {
+        throw new Error(`Server Error (${response.status}): The backend server encountered an error. Please try again later.`);
+      }
+      
+      throw new Error(`Invalid response format. Status: ${response.status}`);
+    }
+
+    // Handle specific error status codes
     if (response.status === 401) {
-      // For login endpoint, return the actual error message from backend
+      // Handle 401 Unauthorized - check if it's a login failure or token expiry
       if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register')) {
-        throw new Error(data.message || 'Authentication failed. Please check your credentials.');
+        throw new Error(data?.message || 'Authentication failed. Please check your credentials.');
       }
       // For authenticated endpoints, it's likely a token expiry
       localStorage.removeItem('gpt_auth');
       throw new Error('Authentication expired. Please log in again.');
     }
 
+    if (response.status === 503) {
+      // Handle 503 Service Unavailable (in case it got past the earlier checks)
+      throw new Error('Service Unavailable: The backend server is not running or unavailable. Please check if the API server is running.');
+    }
+
     if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      throw new Error(data?.message || `HTTP error! status: ${response.status}`);
     }
 
     return data;
@@ -72,6 +134,10 @@ const apiFetch = async (endpoint, options = {}) => {
     if (error.name === 'AbortError') {
       console.warn('API request was aborted');
       throw new Error('Request timeout. Please try again.');
+    }
+    // Re-throw if it's already a formatted error
+    if (error.message && !error.message.includes('Failed to parse') && !error.message.includes('Non-JSON')) {
+      throw error;
     }
     console.error('API Error:', error);
     throw error;

@@ -14,6 +14,7 @@ const statusStyles = {
 export default function RecentProjects() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -46,6 +47,15 @@ export default function RecentProjects() {
         }
       } catch (e) {
         console.error('Failed to load recent projects:', e);
+        if (isMounted) {
+          let errorMessage = e.message || 'Failed to load recent projects';
+          if (e.message && e.message.includes('Service Unavailable')) {
+            errorMessage = 'Unable to connect to the server.';
+          } else if (e.message && e.message.includes('timeout')) {
+            errorMessage = 'Request timed out.';
+          }
+          setError(errorMessage);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -58,7 +68,7 @@ export default function RecentProjects() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Recent Projects</h3>
-          <p className="text-sm text-gray-600">Latest updates from projects across Abia State</p>
+          <p className="text-sm text-gray-600">Latest updates from government projects</p>
         </div>
         <Link 
           to="/projects" 
@@ -70,7 +80,11 @@ export default function RecentProjects() {
       </div>
 
       <div className="space-y-4">
-        {loading ? (
+        {error ? (
+          <div className="text-center py-8">
+            <div className="text-red-500 text-sm mb-2">⚠️ {error}</div>
+          </div>
+        ) : loading ? (
           <div className="text-center py-12 text-gray-500 text-lg">Loading...</div>
         ) : projects.length === 0 ? (
           <div className="text-center py-12 text-gray-500 text-lg">No recent projects</div>

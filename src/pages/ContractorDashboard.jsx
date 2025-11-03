@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import { projectAPI } from '../services/api';
+import { projectAPI, submissionAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 // Mock data removed - now using API calls
@@ -51,6 +51,12 @@ export default function ContractorDashboard() {
   const [recentActivities] = useState([]);
   const [notifications] = useState([]);
   const [upcomingDeadlines] = useState([]);
+  
+  // Form state for submission modal
+  const [submissionType, setSubmissionType] = useState('progress');
+  const [submissionDescription, setSubmissionDescription] = useState('');
+  const [submissionProgress, setSubmissionProgress] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -76,6 +82,61 @@ export default function ContractorDashboard() {
   const avgProgress = contractorProjects.length > 0 ? Math.round(contractorProjects.reduce((sum, project) => sum + (project.progress || 0), 0) / contractorProjects.length) : 0;
   const totalMilestones = 0; // Will be calculated from actual milestones data
   const completedMilestones = 0; // Will be calculated from actual milestones data
+
+  const handleSubmitUpdate = async () => {
+    if (!selectedProject || !submissionDescription.trim()) {
+      alert('Please select a project and provide a description');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      // Map submission type to API type
+      const typeMap = {
+        progress: 'PROGRESS',
+        milestone: 'MILESTONE',
+        issue: 'ISSUE',
+        delay: 'ISSUE',
+        safety: 'SAFETY',
+        quality: 'QUALITY'
+      };
+
+      const submissionData = {
+        projectId: selectedProject,
+        type: typeMap[submissionType] || 'PROGRESS',
+        title: `${typeMap[submissionType] || 'PROGRESS'} Update - ${contractorProjects.find(p => p.id === selectedProject)?.name || ''}`,
+        description: submissionDescription,
+        progress: submissionProgress,
+        priority: submissionType === 'delay' || submissionType === 'issue' ? 'HIGH' : 'MEDIUM'
+      };
+
+      const res = await submissionAPI.create(submissionData);
+      
+      if (res?.success) {
+        alert('Update submitted successfully!');
+        // Reset form
+        setSelectedProject('');
+        setSubmissionType('progress');
+        setSubmissionDescription('');
+        setSubmissionProgress(0);
+        setShowUploadModal(false);
+        
+        // Optionally reload projects to show updated progress
+        const refreshRes = await projectAPI.getAll();
+        if (refreshRes?.success) {
+          setContractorProjects(refreshRes.data?.projects || []);
+        }
+      } else {
+        throw new Error(res?.message || 'Failed to submit update');
+      }
+    } catch (error) {
+      console.error('Failed to submit update:', error);
+      alert(error.message || 'Failed to submit update. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -520,7 +581,11 @@ export default function ContractorDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Update Type *
                   </label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500">
+                  <select 
+                    value={submissionType}
+                    onChange={(e) => setSubmissionType(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500"
+                  >
                     <option value="progress">Progress Update</option>
                     <option value="milestone">Milestone Completion</option>
                     <option value="issue">Report Issue</option>
@@ -535,12 +600,17 @@ export default function ContractorDashboard() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Progress Percentage
                 </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  className="w-full"
-                />
+                <div className="flex items-center space-x-4">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={submissionProgress}
+                    onChange={(e) => setSubmissionProgress(parseInt(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium text-gray-700 w-12 text-right">{submissionProgress}%</span>
+                </div>
               </div>
               
               <div>
@@ -548,6 +618,8 @@ export default function ContractorDashboard() {
                   Description *
                 </label>
                 <textarea 
+                  value={submissionDescription}
+                  onChange={(e) => setSubmissionDescription(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-abia-500"
                   rows="4"
                   placeholder="Describe the update, progress made, or issues encountered..."
@@ -581,17 +653,25 @@ export default function ContractorDashboard() {
             
             <div className="flex space-x-3 mt-8">
               <button 
-                onClick={() => setShowUploadModal(false)}
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setSelectedProject('');
+                  setSubmissionType('progress');
+                  setSubmissionDescription('');
+                  setSubmissionProgress(0);
+                }}
                 className="flex-1 btn-secondary"
+                disabled={submitting}
               >
                 Cancel
               </button>
               <button 
-                onClick={() => setShowUploadModal(false)}
+                onClick={handleSubmitUpdate}
                 className="flex-1 btn-primary flex items-center justify-center space-x-2"
+                disabled={submitting || !selectedProject || !submissionDescription.trim()}
               >
                 <Send className="h-4 w-4" />
-                <span>Submit Update</span>
+                <span>{submitting ? 'Submitting...' : 'Submit Update'}</span>
               </button>
             </div>
           </div>

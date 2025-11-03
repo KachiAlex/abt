@@ -1,80 +1,88 @@
-import { onRequest } from 'firebase-functions/v2/https';
-import { setGlobalOptions } from 'firebase-functions/v2';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
+// Ultra-minimal function entry - avoids deployment timeout
+// Everything loads lazily on first request
 
-// Import routes
-import authRoutes from './routes/auth';
-import fileRoutes from './routes/files';
-import projectRoutes from './routes/projects';
-import contractorRoutes from './routes/contractors';
-import submissionRoutes from './routes/submissions';
-import dashboardRoutes from './routes/dashboard';
-import publicRoutes from './routes/public';
-import seedRoutes from './routes/seed';
+import { onRequest } from 'firebase-functions/v1/https';
 
-// Import config to initialize Firestore
-import './config/firestore';
-import './config';
+// Declare global types for lazy-loaded app
+declare global {
+  var expressApp: any;
+  var appInitialized: boolean;
+}
 
-// Configure global options
-setGlobalOptions({ region: 'us-central1' });
+// Initialize app lazily - defer ALL imports to avoid deployment timeout
+const getApp = (): any => {
+  if (!global.appInitialized) {
+    // Lazy load Express
+    const express = require('express');
+    const app = express();
+    
+    // Load everything lazily
+    const cors = require('cors');
+    const helmet = require('helmet');
+    const compression = require('compression');
+    
+    // Load config
+    require('./config/firestore');
+    require('./config');
+    
+    // Setup middleware
+    app.use(cors({ origin: true }));
+    app.use(helmet());
+    app.use(compression());
+    app.use(express.json());
+    
+    // Health check
+    app.get('/health', (_req: any, res: any) => {
+      res.json({ success: true, message: 'API ready' });
+    });
+    
+    // Load and mount routes
+    app.use('/api/auth', require('./routes/auth').default);
+    app.use('/api/files', require('./routes/files').default);
+    app.use('/api/projects', require('./routes/projects').default);
+    app.use('/api/contractors', require('./routes/contractors').default);
+    app.use('/api/submissions', require('./routes/submissions').default);
+    app.use('/api/dashboard', require('./routes/dashboard').default);
+    app.use('/api/public', require('./routes/public').default);
+    app.use('/api/seed', require('./routes/seed').default);
+    
+    // Error handler
+    app.use((err: any, _req: any, res: any, _next: any) => {
+      console.error('Error:', err);
+      res.status(err.status || 500).json({
+        success: false,
+        message: err.message || 'Internal server error',
+      });
+    });
+    
+    // 404 handler
+    app.use((_req: any, res: any) => {
+      res.status(404).json({
+        success: false,
+        message: 'Route not found',
+      });
+    });
+    
+    // Store app globally
+    global.expressApp = app;
+    global.appInitialized = true;
+  }
+  
+  return global.expressApp;
+};
 
-export const app = express();
+// Export app placeholder to avoid initialization during deployment analysis
+export const app = { use: () => {}, get: () => {}, post: () => {} } as any;
 
-// Basic middleware
-app.use(cors({ origin: true }));
-app.use(helmet());
-app.use(compression());
-app.use(express.json());
-
-// Health check endpoint
-app.get('/health', (_req, res) => {
-  res.json({
-    success: true,
-    message: 'GPT API is running with Firestore',
-    timestamp: new Date().toISOString(),
-    environment: 'production',
-    database: 'Firestore',
-  });
+// Export as v1 function (free tier compatible)
+// Using apiV1 name to avoid conflict with existing v2 function named 'api'
+// Create a wrapper that calls getApp() only when request arrives
+// Using handler function to avoid initialization during deployment analysis
+export const apiV1 = onRequest((req: any, res: any) => {
+  const handlerApp = getApp();
+  handlerApp(req, res);
 });
 
-// Mount routes
-app.use('/api/auth', authRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/contractors', contractorRoutes);
-app.use('/api/submissions', submissionRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/seed', seedRoutes);
-
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-  });
-});
-
-// Error handling middleware
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal server error',
-  });
-});
-
-// Export the Express app as a Firebase Function (v2)
-export const api = onRequest(
-  {
-    timeoutSeconds: 540,
-    memory: '1GiB',
-    cors: true,
-    invoker: 'public',
-  },
-  app
-);
+// Note: 'api' export removed to avoid conflict with existing v2 deployment
+// After old v2 function is removed (requires billing enabled), 
+// we can rename apiV1 back to api

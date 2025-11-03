@@ -116,19 +116,88 @@ export default function MEDashboard() {
     return matchesSearch && matchesType && matchesPriority;
   });
 
-  const handleApprove = (submissionId) => {
-    console.log('Approving submission:', submissionId);
-    // In real app, this would make an API call
+  const handleApprove = async (submissionId) => {
+    try {
+      const res = await submissionAPI.review(submissionId, {
+        action: 'APPROVED',
+        comments: 'Submission approved',
+      });
+      if (res?.success) {
+        // Reload submissions to reflect the change
+        const refreshRes = await submissionAPI.getAll();
+        if (refreshRes?.success) {
+          setSubmissions(refreshRes.data?.submissions || []);
+          const all = refreshRes.data?.submissions || [];
+          setStats({
+            pending: all.filter(s => s.status === 'PENDING').length,
+            underReview: all.filter(s => s.status === 'UNDER_REVIEW').length,
+            approved: all.filter(s => s.status === 'APPROVED').length,
+            rejected: all.filter(s => s.status === 'REJECTED').length
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to approve submission:', error);
+      alert(error.message || 'Failed to approve submission');
+    }
   };
 
-  const handleReject = (submissionId) => {
-    console.log('Rejecting submission:', submissionId);
-    // In real app, this would make an API call
+  const handleReject = async (submissionId) => {
+    const comments = prompt('Enter rejection reason:');
+    if (!comments) return;
+    
+    try {
+      const res = await submissionAPI.review(submissionId, {
+        action: 'REJECTED',
+        comments,
+      });
+      if (res?.success) {
+        // Reload submissions to reflect the change
+        const refreshRes = await submissionAPI.getAll();
+        if (refreshRes?.success) {
+          setSubmissions(refreshRes.data?.submissions || []);
+          const all = refreshRes.data?.submissions || [];
+          setStats({
+            pending: all.filter(s => s.status === 'PENDING').length,
+            underReview: all.filter(s => s.status === 'UNDER_REVIEW').length,
+            approved: all.filter(s => s.status === 'APPROVED').length,
+            rejected: all.filter(s => s.status === 'REJECTED').length
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to reject submission:', error);
+      alert(error.message || 'Failed to reject submission');
+    }
   };
 
-  const handleFlag = (submissionId) => {
-    console.log('Flagging submission:', submissionId);
-    // In real app, this would make an API call
+  const handleFlag = async (submissionId) => {
+    const comments = prompt('Enter flag reason:');
+    if (!comments) return;
+    
+    try {
+      const res = await submissionAPI.review(submissionId, {
+        action: 'FLAGGED',
+        comments,
+      });
+      if (res?.success) {
+        // Reload submissions to reflect the change
+        const refreshRes = await submissionAPI.getAll();
+        if (refreshRes?.success) {
+          setSubmissions(refreshRes.data?.submissions || []);
+          const all = refreshRes.data?.submissions || [];
+          setStats({
+            pending: all.filter(s => s.status === 'PENDING').length,
+            underReview: all.filter(s => s.status === 'UNDER_REVIEW').length,
+            approved: all.filter(s => s.status === 'APPROVED').length,
+            rejected: all.filter(s => s.status === 'REJECTED').length
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to flag submission:', error);
+      alert(error.message || 'Failed to flag submission');
+    }
   };
 
   const handleViewReport = (report) => {

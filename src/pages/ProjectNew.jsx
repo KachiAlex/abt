@@ -245,7 +245,7 @@ export default function ProjectNew() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Add New Project</h1>
-            <p className="text-gray-600">Create a new project in the Abia Project Tracker system.</p>
+            <p className="text-gray-600">Create a new project in the Government Project Tracker system.</p>
           </div>
         </div>
         <div className="flex space-x-3">

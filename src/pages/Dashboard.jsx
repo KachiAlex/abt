@@ -75,7 +75,7 @@ export default function Dashboard() {
         <StatsCard
           title="Total Projects"
           value={stats && stats.total !== undefined ? String(stats.total) : (loading ? '...' : '0')}
-          subtitle={error ? 'Error loading' : '+12 from last month'}
+          subtitle={error ? 'Error loading data' : '+12 from last month'}
           icon={FolderOpen}
           trend="up"
           trendValue="+12"

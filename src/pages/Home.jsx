@@ -58,10 +58,10 @@ export default function Home() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-abia-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">APT</span>
+                <span className="text-white font-bold text-sm">GPT</span>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Abia Project Tracker</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Government Project Tracker</h1>
               </div>
             </div>
             <div className="flex items-center space-x-2">

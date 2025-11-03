@@ -13,7 +13,8 @@ import {
   MoreHorizontal,
   User,
   Award,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
@@ -30,7 +31,7 @@ const statusStyles = {
 };
 
 export default function Contractors() {
-  const { contractors } = useContractors();
+  const { contractors, error: contractorsError, loading: contractorsLoading } = useContractors();
   const [searchTerm, setSearchTerm] = useState('');
   const [specializationFilter, setSpecializationFilter] = useState('All Specializations');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
@@ -80,7 +81,7 @@ export default function Contractors() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Contractors</h1>
-          <p className="text-lg text-gray-600">Manage and monitor all contractors working on Abia State projects.</p>
+          <p className="text-lg text-gray-600">Manage and monitor all contractors working on government projects.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-4">
           <button className="btn-secondary flex items-center space-x-2">
@@ -93,6 +94,19 @@ export default function Contractors() {
           </Link>
         </div>
       </div>
+
+      {/* Error Message */}
+      {contractorsError && (
+        <div className="card bg-red-50 border border-red-200">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div>
+              <h3 className="text-sm font-medium text-red-900">Error Loading Contractors</h3>
+              <p className="text-sm text-red-700 mt-1">{contractorsError}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -187,7 +201,7 @@ export default function Contractors() {
       <div className="card">
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-gray-900">All Contractors</h3>
-          <p className="text-base text-gray-600 mt-1">A comprehensive list of all contractors in the Abia Project Tracker system.</p>
+          <p className="text-base text-gray-600 mt-1">A comprehensive list of all contractors in the Government Project Tracker system.</p>
         </div>
 
         {/* Desktop Table */}

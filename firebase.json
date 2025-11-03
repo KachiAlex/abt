@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "function": "api"
+        "function": "apiV1"
       },
       {
         "source": "**",
@@ -20,6 +20,13 @@
   "functions": {
     "source": "backend",
     "runtime": "nodejs20",
+    "ignore": [
+      "node_modules",
+      ".git",
+      ".env",
+      ".env.*",
+      "*.log"
+    ],
     "predeploy": [
       "npm --prefix \"$RESOURCE_DIR\" run build"
     ]

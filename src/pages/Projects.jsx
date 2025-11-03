@@ -10,7 +10,8 @@ import {
   DollarSign,
   User,
   MoreHorizontal,
-  FolderOpen
+  FolderOpen,
+  AlertTriangle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
@@ -76,7 +77,16 @@ export default function Projects() {
           }));
         }
       } catch (e) {
-        if (isMounted) setError(e.message || 'Failed to load projects');
+        if (isMounted) {
+          let errorMessage = e.message || 'Failed to load projects';
+          // Provide user-friendly error messages
+          if (e.message && e.message.includes('Service Unavailable')) {
+            errorMessage = 'Unable to connect to the server. Please check if the API server is running.';
+          } else if (e.message && e.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again later.';
+          }
+          setError(errorMessage);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -233,11 +243,24 @@ export default function Projects() {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="card bg-red-50 border border-red-200">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div>
+              <h3 className="text-sm font-medium text-red-900">Error Loading Projects</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Projects Table */}
       <div className="card">
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-gray-900">All Projects</h3>
-          <p className="text-base text-gray-600 mt-1">A comprehensive list of all projects in the Abia Project Tracker system.</p>
+          <p className="text-base text-gray-600 mt-1">A comprehensive list of all projects in the Government Project Tracker system.</p>
         </div>
 
         {/* Desktop Table */}

@@ -88,7 +88,14 @@ export const ContractorsProvider = ({ children }) => {
         setContractors([]);
       } else {
         console.error('Error loading contractors:', error);
-        setError(error.message);
+        // Provide user-friendly error messages
+        let errorMessage = error.message || 'Failed to load contractors';
+        if (error.message && error.message.includes('Service Unavailable')) {
+          errorMessage = 'Unable to connect to the server. Please check if the API server is running.';
+        } else if (error.message && error.message.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again later.';
+        }
+        setError(errorMessage);
         setContractors([]);
       }
     } finally {

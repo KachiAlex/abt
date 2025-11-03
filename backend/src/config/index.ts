@@ -1,26 +1,40 @@
 import dotenv from 'dotenv';
 
 // Check if running in Firebase Functions BEFORE loading .env
-const isFirebaseFunction = !!process.env.FUNCTION_TARGET || !!process.env.K_SERVICE || !!process.env.FUNCTIONS_EMULATOR;
+const isFirebaseFunction = !!process.env.FUNCTION_TARGET || 
+                          !!process.env.K_SERVICE || 
+                          !!process.env.FUNCTIONS_EMULATOR ||
+                          !!process.env.GCLOUD_PROJECT ||
+                          process.env.NODE_ENV === 'production';
 
 // Load environment variables only for local development (not in Functions)
-if (!isFirebaseFunction) {
-  dotenv.config();
+// Also skip if in CI/CD or deployment environment
+// NEVER load .env in Firebase Functions deployment
+if (!isFirebaseFunction && !process.env.CI && !process.env.GCLOUD_PROJECT) {
+  try {
+    // Only load if .env file exists and we're truly in local dev
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.join(__dirname, '../../.env');
+    
+    if (fs.existsSync(envPath)) {
+      dotenv.config({
+        path: envPath,
+        override: false
+      });
+    }
+  } catch (error) {
+    // Silently ignore dotenv errors - we'll use defaults
+  }
 }
 
 // Minimal logging to avoid deployment timeout
 
-// Import Firebase Functions conditionally
+// Import Firebase Functions conditionally - lazy load to avoid deployment timeout
+// Note: functions.config() is deprecated, use environment variables instead
 let functionsConfig: any = {};
-try {
-  const functions = require('firebase-functions');
-  functionsConfig = functions.config();
-  if (Object.keys(functionsConfig).length > 0) {
-    // Config loaded successfully
-  }
-} catch (error) {
-  console.warn('Firebase Functions config not available, using environment variables');
-}
+// Skip functions.config() entirely to avoid deprecation warnings and deployment issues
+// Use environment variables directly instead
 
 export const config = {
   // Server

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useContractors } from '../contexts/ContractorsContext';
+import { projectAPI } from '../services/api';
 import { 
   ArrowLeft, 
   Save, 
@@ -24,68 +25,47 @@ import {
   File
 } from 'lucide-react';
 
-// Mock project data - in a real app, this would come from an API
-const availableProjects = [
-  {
-    id: 'PRJ-2023-001',
-    name: 'Aba-Umuahia Expressway Expansion',
-    category: 'Road Construction',
-    status: 'In Progress',
-    budget: '₦1,200,000,000',
-    location: 'Aba North',
-    startDate: '2023-01-15',
-    endDate: '2024-06-30'
-  },
-  {
-    id: 'PRJ-2023-002',
-    name: 'Umuahia General Hospital Upgrade',
-    category: 'Healthcare Infrastructure',
-    status: 'Planning',
-    budget: '₦850,000,000',
-    location: 'Umuahia',
-    startDate: '2024-02-01',
-    endDate: '2025-12-31'
-  },
-  {
-    id: 'PRJ-2023-003',
-    name: 'Aba Water Treatment Plant',
-    category: 'Water & Sanitation',
-    status: 'Planning',
-    budget: '₦650,000,000',
-    location: 'Aba South',
-    startDate: '2024-03-15',
-    endDate: '2026-03-15'
-  },
-  {
-    id: 'PRJ-2023-004',
-    name: 'State University Campus Expansion',
-    category: 'Educational Infrastructure',
-    status: 'Planning',
-    budget: '₦1,500,000,000',
-    location: 'Uturu',
-    startDate: '2024-04-01',
-    endDate: '2026-04-01'
-  },
-  {
-    id: 'PRJ-2023-005',
-    name: 'Rural Electrification Project',
-    category: 'Power & Energy',
-    status: 'Planning',
-    budget: '₦420,000,000',
-    location: 'Multiple LGAs',
-    startDate: '2024-05-01',
-    endDate: '2025-05-01'
-  }
-];
-
 export default function ContractorNew() {
   const navigate = useNavigate();
   const { addContractor } = useContractors();
   const [loading, setLoading] = useState(false);
   const [assignedProjects, setAssignedProjects] = useState([]);
+  const [availableProjects, setAvailableProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Load available projects from API
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        setLoadingProjects(true);
+        const res = await projectAPI.getAll();
+        if (res?.success) {
+          const projects = res.data?.projects || [];
+          // Filter out projects that already have contractors assigned (optional)
+          // For now, include all projects - admin can reassign if needed
+          setAvailableProjects(projects.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            status: p.status,
+            budget: `₦${(p.budget || 0).toLocaleString()}`,
+            location: Array.isArray(p.lga) ? p.lga.join(', ') : p.lga || 'Not specified',
+            startDate: p.startDate ? new Date(p.startDate).toISOString().split('T')[0] : '',
+            endDate: p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split('T')[0] : ''
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+        setAvailableProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    loadProjects();
+  }, []);
   const [formData, setFormData] = useState({
     // Basic Information
     companyName: '',
@@ -313,9 +293,27 @@ export default function ContractorNew() {
       
       // Add contractor to the context (this will update the contractors list)
       console.log('About to call addContractor with data:', contractorData);
-      const newContractor = addContractor(contractorData);
+      const newContractor = await addContractor(contractorData);
       
       console.log('Contractor added successfully:', newContractor);
+      
+      // Assign projects to the contractor after creation
+      if (assignedProjects.length > 0 && newContractor?.id) {
+        try {
+          const { contractorAPI } = await import('../services/api');
+          for (const project of assignedProjects) {
+            await contractorAPI.assignProject({
+              contractorId: newContractor.id,
+              projectId: project.id
+            });
+          }
+        } catch (assignError) {
+          console.error('Error assigning projects:', assignError);
+          // Still show success, but mention project assignment issue
+          alert(`Contractor created but some projects may not have been assigned. ${assignError.message}`);
+        }
+      }
+      
       const projectMessage = assignedProjects.length > 0 ? `Assigned to ${assignedProjects.length} project(s). ` : '';
       const documentMessage = uploadedDocuments.length > 0 ? `Uploaded ${uploadedDocuments.length} document(s).` : '';
       alert(`Contractor added successfully! ${projectMessage}${documentMessage}`);
@@ -1045,7 +1043,12 @@ export default function ContractorNew() {
               </div>
 
               <div className="p-6 overflow-y-auto max-h-[60vh]">
-                {getAvailableProjects().length > 0 ? (
+                {loadingProjects ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading projects...</p>
+                  </div>
+                ) : getAvailableProjects().length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {getAvailableProjects().map((project) => (
                       <div
