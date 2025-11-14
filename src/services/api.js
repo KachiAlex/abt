@@ -1,7 +1,23 @@
 // API Client Service for ABT Frontend
 // Centralized API communication with authentication and error handling
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Determine API URL based on environment
+const getApiBaseUrl = () => {
+  // If explicitly set via environment variable, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // If running on Firebase hosting, use Firebase Functions URL
+  if (window.location.hostname.includes('web.app') || window.location.hostname.includes('firebaseapp.com')) {
+    return 'https://us-central1-abt-abia-tracker.cloudfunctions.net/apiV1/api';
+  }
+  
+  // Default to localhost for local development
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Get auth token from localStorage

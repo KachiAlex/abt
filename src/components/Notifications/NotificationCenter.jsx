@@ -30,6 +30,12 @@ export default function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    // Check if socket is available
+    if (!socket) {
+      console.warn('Socket.IO not available. Real-time notifications disabled.');
+      return;
+    }
+
     // Listen for real-time notifications
     const handleNewSubmission = (data) => {
       addNotification({
@@ -99,10 +105,12 @@ export default function NotificationCenter() {
 
     // Cleanup
     return () => {
-      socket.off('new-submission', handleNewSubmission);
-      socket.off('submission-reviewed', handleSubmissionReviewed);
-      socket.off('project-updated', handleProjectUpdated);
-      socket.off('deadline-reminder', handleDeadlineReminder);
+      if (socket) {
+        socket.off('new-submission', handleNewSubmission);
+        socket.off('submission-reviewed', handleSubmissionReviewed);
+        socket.off('project-updated', handleProjectUpdated);
+        socket.off('deadline-reminder', handleDeadlineReminder);
+      }
     };
   }, []);
 
