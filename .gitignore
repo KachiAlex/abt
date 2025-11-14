@@ -99,4 +99,4 @@ jspm_packages/
 
 # Firebase
 .firebase/
-.firebaserc
+# Note: .firebaserc should be committed (contains project config)
