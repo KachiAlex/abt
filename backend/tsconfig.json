@@ -24,7 +24,33 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/server.ts",
+    "src/config/index.ts",
+    "src/config/database.ts",
+    "src/routes/auth.ts",
+    "src/routes/projects.ts",
+    "src/routes/contractors.ts",
+    "src/routes/submissions.ts",
+    "src/types/express.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/tests/**",
+    "**/__tests__/**",
+    "src/tests",
+    "src/routes/dashboard.ts",
+    "src/routes/public.ts",
+    "src/routes/files.ts",
+    "src/routes/seed.ts",
+    "src/scripts",
+    "src/config/firestore.ts",
+    "src/functions.ts",
+    "src/types/firestore.ts",
+    "src/services/fileUploadService.ts"
+  ]
 }
 

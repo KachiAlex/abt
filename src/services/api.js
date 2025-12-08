@@ -8,9 +8,10 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // If running on Firebase hosting, use Firebase Functions URL
-  if (window.location.hostname.includes('web.app') || window.location.hostname.includes('firebaseapp.com')) {
-    return 'https://us-central1-abt-abia-tracker.cloudfunctions.net/apiV1/api';
+  // If running in production (not localhost), use Render API URL
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Replace with your Render API URL after deployment
+    return import.meta.env.VITE_RENDER_API_URL || 'https://abt-api.onrender.com/api';
   }
   
   // Default to localhost for local development
@@ -45,6 +46,8 @@ const apiFetch = async (endpoint, options = {}) => {
     'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  // No special headers needed for Render API - just use JWT token
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;

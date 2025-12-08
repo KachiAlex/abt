@@ -1,20 +1,21 @@
-import { Router } from 'express';
-import { db, Collections } from '../config/firestore';
-import { ContractorProfile, User, UserRole } from '../types/firestore';
+import { Router, Request, Response } from 'express';
+import { query, rowToCamelCase, objectToSnakeCase } from '../config/database';
 import { config } from '../config';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 // Middleware to verify JWT token
-const verifyToken = (req: any, res: any, next: any) => {
+const verifyToken = (req: Request, res: Response, next: () => void): void => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Authorization token required'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -23,18 +24,20 @@ const verifyToken = (req: any, res: any, next: any) => {
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid token'
       });
+      return;
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Token expired'
       });
+      return;
     }
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
@@ -42,12 +45,13 @@ const verifyToken = (req: any, res: any, next: any) => {
 };
 
 // Middleware to check admin role
-const requireAdmin = (req: any, res: any, next: any) => {
-  if (req.user.role !== 'GOVERNMENT_ADMIN') {
-    return res.status(403).json({
+const requireAdmin = (req: Request, res: Response, next: () => void): void => {
+  if (!req.user || req.user.role !== 'GOVERNMENT_ADMIN') {
+    res.status(403).json({
       success: false,
       message: 'Admin access required'
     });
+    return;
   }
   next();
 };
@@ -56,7 +60,7 @@ const requireAdmin = (req: any, res: any, next: any) => {
  * GET /api/contractors
  * Get all contractors with filtering
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, async (req: Request, res: Response) => {
   try {
     const { 
       verified, 
@@ -67,44 +71,55 @@ router.get('/', verifyToken, async (req, res) => {
       search 
     } = req.query;
 
-    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = db.collection(Collections.CONTRACTOR_PROFILES);
+    // Build WHERE clause
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    // Apply filters
     if (verified !== undefined) {
-      query = query.where('isVerified', '==', verified === 'true');
+      conditions.push(`is_verified = $${paramIndex++}`);
+      params.push(verified === 'true');
     }
     if (certified !== undefined) {
-      query = query.where('isCertified', '==', certified === 'true');
+      conditions.push(`is_certified = $${paramIndex++}`);
+      params.push(certified === 'true');
     }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Get contractors
+    const result = await query(
+      `SELECT * FROM contractor_profiles ${whereClause} ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, parseInt(limit as string), (parseInt(page as string) - 1) * parseInt(limit as string)]
+    );
+
+    let contractors = result.rows.map(rowToCamelCase);
+
+    // Filter by specialization (array contains)
     if (specialization) {
-      query = query.where('specialization', 'array-contains', specialization);
+      contractors = contractors.filter((contractor: any) => {
+        return contractor.specialization && contractor.specialization.includes(specialization);
+      });
     }
-
-    // Apply pagination
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
-
-    query = query.offset(offset).limit(limitNum);
-
-    const snapshot = await query.get();
-    let contractors = snapshot.docs.map(doc => doc.data() as ContractorProfile);
 
     // Apply search filter
     if (search) {
       const searchTerm = (search as string).toLowerCase();
-      contractors = contractors.filter(contractor => 
-        contractor.companyName.toLowerCase().includes(searchTerm) ||
-        contractor.contactPerson.toLowerCase().includes(searchTerm) ||
-        contractor.companyEmail.toLowerCase().includes(searchTerm)
+      contractors = contractors.filter((contractor: any) => 
+        contractor.companyName?.toLowerCase().includes(searchTerm) ||
+        contractor.contactPerson?.toLowerCase().includes(searchTerm) ||
+        contractor.companyEmail?.toLowerCase().includes(searchTerm)
       );
     }
 
     // Get user information for each contractor
     const contractorsWithUsers = await Promise.all(
-      contractors.map(async (contractor) => {
-        const userDoc = await db.collection(Collections.USERS).doc(contractor.userId).get();
-        const user = userDoc.exists ? userDoc.data() as User : null;
+      contractors.map(async (contractor: any) => {
+        const userResult = await query(
+          'SELECT id, first_name, last_name, email, phone, is_active FROM users WHERE id = $1',
+          [contractor.userId]
+        );
+        const user = userResult.rows.length > 0 ? rowToCamelCase(userResult.rows[0]) : null;
         
         return {
           ...contractor,
@@ -121,18 +136,21 @@ router.get('/', verifyToken, async (req, res) => {
     );
 
     // Get total count for pagination
-    const totalSnapshot = await db.collection(Collections.CONTRACTOR_PROFILES).get();
-    const total = totalSnapshot.size;
+    const totalResult = await query(
+      `SELECT COUNT(*) as count FROM contractor_profiles ${whereClause}`,
+      params
+    );
+    const total = parseInt(totalResult.rows[0].count);
 
     return res.json({
       success: true,
       data: {
         contractors: contractorsWithUsers,
         pagination: {
-          page: pageNum,
-          limit: limitNum,
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
           total,
-          pages: Math.ceil(total / limitNum)
+          pages: Math.ceil(total / parseInt(limit as string))
         }
       }
     });
@@ -150,38 +168,44 @@ router.get('/', verifyToken, async (req, res) => {
  * GET /api/contractors/:id
  * Get contractor by ID
  */
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const doc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(id).get();
+    const result = await query(
+      'SELECT * FROM contractor_profiles WHERE id = $1',
+      [id]
+    );
     
-    if (!doc.exists) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Contractor not found'
       });
     }
 
-    const contractor = doc.data() as ContractorProfile;
+    const contractor = rowToCamelCase(result.rows[0]);
 
     // Get user information
-    const userDoc = await db.collection(Collections.USERS).doc(contractor.userId).get();
-    const user = userDoc.exists ? userDoc.data() as User : null;
+    const userResult = await query(
+      'SELECT * FROM users WHERE id = $1',
+      [contractor.userId]
+    );
+    const user = userResult.rows.length > 0 ? rowToCamelCase(userResult.rows[0]) : null;
 
     // Get contractor's projects
-    const projectsSnapshot = await db.collection(Collections.PROJECTS)
-      .where('contractorId', '==', id)
-      .get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data());
+    const projectsResult = await query(
+      'SELECT * FROM projects WHERE contractor_id = $1',
+      [id]
+    );
+    const projects = projectsResult.rows.map(rowToCamelCase);
 
     // Get contractor's submissions
-    const submissionsSnapshot = await db.collection(Collections.SUBMISSIONS)
-      .where('contractorId', '==', id)
-      .orderBy('submittedAt', 'desc')
-      .limit(10)
-      .get();
-    const recentSubmissions = submissionsSnapshot.docs.map(doc => doc.data());
+    const submissionsResult = await query(
+      'SELECT * FROM submissions WHERE contractor_id = $1 ORDER BY submitted_at DESC LIMIT 10',
+      [id]
+    );
+    const recentSubmissions = submissionsResult.rows.map(rowToCamelCase);
 
     return res.json({
       success: true,
@@ -215,7 +239,7 @@ router.get('/:id', verifyToken, async (req, res) => {
  * POST /api/contractors
  * Create new contractor (Admin only)
  */
-router.post('/', verifyToken, requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req: Request, res: Response) => {
   try {
     const {
       userId,
@@ -238,16 +262,20 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Check if user exists and is a contractor
-    const userDoc = await db.collection(Collections.USERS).doc(userId).get();
-    if (!userDoc.exists) {
+    const userResult = await query(
+      'SELECT * FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    const user = userDoc.data() as User;
-    if (user.role !== UserRole.CONTRACTOR) {
+    const user = rowToCamelCase(userResult.rows[0]);
+    if (user.role !== 'CONTRACTOR') {
       return res.status(400).json({
         success: false,
         message: 'User must have contractor role'
@@ -255,12 +283,12 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Check if contractor profile already exists
-    const existingProfileQuery = await db.collection(Collections.CONTRACTOR_PROFILES)
-      .where('userId', '==', userId)
-      .limit(1)
-      .get();
+    const existingProfileResult = await query(
+      'SELECT id FROM contractor_profiles WHERE user_id = $1 LIMIT 1',
+      [userId]
+    );
 
-    if (!existingProfileQuery.empty) {
+    if (existingProfileResult.rows.length > 0) {
       return res.status(409).json({
         success: false,
         message: 'Contractor profile already exists for this user'
@@ -268,12 +296,12 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Check if registration number is unique
-    const existingRegQuery = await db.collection(Collections.CONTRACTOR_PROFILES)
-      .where('registrationNo', '==', registrationNo)
-      .limit(1)
-      .get();
+    const existingRegResult = await query(
+      'SELECT id FROM contractor_profiles WHERE registration_no = $1 LIMIT 1',
+      [registrationNo]
+    );
 
-    if (!existingRegQuery.empty) {
+    if (existingRegResult.rows.length > 0) {
       return res.status(409).json({
         success: false,
         message: 'Registration number already exists'
@@ -281,29 +309,29 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Generate contractor profile ID
-    const contractorId = `contractor-${Date.now()}`;
+    const contractorId = `contractor-${Date.now()}-${uuidv4().split('-')[0]}`;
+
+    // Handle specialization array
+    const specializationArray = Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []);
 
     // Create contractor profile
-    const contractor: ContractorProfile = {
-      id: contractorId,
-      userId,
-      companyName,
-      registrationNo,
-      contactPerson,
-      companyEmail,
-      companyPhone,
-      companyAddress,
-      rating: 0,
-      isVerified: false,
-      isCertified: false,
-      yearsExperience: yearsExperience ? parseInt(yearsExperience) : undefined,
-      specialization: specialization || [],
-      createdAt: new Date() as any,
-      updatedAt: new Date() as any
-    };
+    const insertResult = await query(
+      `INSERT INTO contractor_profiles (
+        id, user_id, company_name, registration_no, contact_person,
+        company_email, company_phone, company_address, rating,
+        is_verified, is_certified, years_experience, specialization,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      RETURNING *`,
+      [
+        contractorId, userId, companyName, registrationNo, contactPerson,
+        companyEmail, companyPhone, companyAddress, 0,
+        false, false, yearsExperience ? parseInt(yearsExperience) : null,
+        specializationArray
+      ]
+    );
 
-    // Save contractor profile to Firestore
-    await db.collection(Collections.CONTRACTOR_PROFILES).doc(contractorId).set(contractor);
+    const contractor = rowToCamelCase(insertResult.rows[0]);
 
     return res.status(201).json({
       success: true,
@@ -324,23 +352,33 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
  * PUT /api/contractors/:id
  * Update contractor profile
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
     // Check if contractor exists
-    const doc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(id).get();
-    if (!doc.exists) {
+    const checkResult = await query(
+      'SELECT * FROM contractor_profiles WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Contractor not found'
       });
     }
 
-    const contractor = doc.data() as ContractorProfile;
+    const contractor = rowToCamelCase(checkResult.rows[0]);
 
     // Check permissions
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
     const isAdmin = req.user.role === 'GOVERNMENT_ADMIN';
     const isContractorOwner = contractor.userId === req.user.userId;
 
@@ -351,18 +389,43 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Remove fields that shouldn't be updated directly
+    // Build update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    // Remove fields that shouldn't be updated
     delete updateData.id;
     delete updateData.userId;
     delete updateData.createdAt;
-    updateData.updatedAt = new Date();
+
+    // Convert camelCase to snake_case and build update
+    const snakeCaseData = objectToSnakeCase(updateData);
+    for (const [key, value] of Object.entries(snakeCaseData)) {
+      if (key === 'specialization' && value) {
+        updates.push(`specialization = $${paramIndex++}`);
+        values.push(Array.isArray(value) ? value : [value]);
+      } else if (value !== undefined && value !== null) {
+        updates.push(`${key} = $${paramIndex++}`);
+        values.push(value);
+      }
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
 
     // Update contractor profile
-    await db.collection(Collections.CONTRACTOR_PROFILES).doc(id).update(updateData);
+    await query(
+      `UPDATE contractor_profiles SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      values
+    );
 
     // Get updated contractor
-    const updatedDoc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(id).get();
-    const updatedContractor = updatedDoc.data() as ContractorProfile;
+    const updatedResult = await query(
+      'SELECT * FROM contractor_profiles WHERE id = $1',
+      [id]
+    );
+    const updatedContractor = rowToCamelCase(updatedResult.rows[0]);
 
     return res.json({
       success: true,
@@ -383,13 +446,17 @@ router.put('/:id', verifyToken, async (req, res) => {
  * GET /api/contractors/:id/stats
  * Get contractor statistics
  */
-router.get('/:id/stats', verifyToken, async (req, res) => {
+router.get('/:id/stats', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     // Check if contractor exists
-    const doc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(id).get();
-    if (!doc.exists) {
+    const checkResult = await query(
+      'SELECT id FROM contractor_profiles WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Contractor not found'
@@ -397,16 +464,18 @@ router.get('/:id/stats', verifyToken, async (req, res) => {
     }
 
     // Get contractor's projects
-    const projectsSnapshot = await db.collection(Collections.PROJECTS)
-      .where('contractorId', '==', id)
-      .get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data());
+    const projectsResult = await query(
+      'SELECT * FROM projects WHERE contractor_id = $1',
+      [id]
+    );
+    const projects = projectsResult.rows.map(rowToCamelCase);
 
     // Get contractor's submissions
-    const submissionsSnapshot = await db.collection(Collections.SUBMISSIONS)
-      .where('contractorId', '==', id)
-      .get();
-    const submissions = submissionsSnapshot.docs.map(doc => doc.data());
+    const submissionsResult = await query(
+      'SELECT * FROM submissions WHERE contractor_id = $1',
+      [id]
+    );
+    const submissions = submissionsResult.rows.map(rowToCamelCase);
 
     const stats = {
       totalProjects: projects.length,
@@ -415,9 +484,9 @@ router.get('/:id/stats', verifyToken, async (req, res) => {
       totalSubmissions: submissions.length,
       approvedSubmissions: submissions.filter(s => s.status === 'APPROVED').length,
       pendingSubmissions: submissions.filter(s => s.status === 'PENDING').length,
-      totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
-      spentBudget: projects.reduce((sum, p) => sum + p.spentBudget, 0),
-      averageProjectProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length : 0
+      totalBudget: projects.reduce((sum, p) => sum + (p.budget || 0), 0),
+      spentBudget: projects.reduce((sum, p) => sum + (p.spentBudget || 0), 0),
+      averageProjectProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length : 0
     };
 
     return res.json({
@@ -438,7 +507,7 @@ router.get('/:id/stats', verifyToken, async (req, res) => {
  * POST /api/contractors/assign-project
  * Assign project to contractor (Admin only)
  */
-router.post('/assign-project', verifyToken, requireAdmin, async (req, res) => {
+router.post('/assign-project', verifyToken, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { contractorId, projectId } = req.body;
 
@@ -450,8 +519,12 @@ router.post('/assign-project', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Check if contractor exists
-    const contractorDoc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(contractorId).get();
-    if (!contractorDoc.exists) {
+    const contractorResult = await query(
+      'SELECT id FROM contractor_profiles WHERE id = $1',
+      [contractorId]
+    );
+    
+    if (contractorResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Contractor not found'
@@ -459,8 +532,12 @@ router.post('/assign-project', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Check if project exists
-    const projectDoc = await db.collection(Collections.PROJECTS).doc(projectId).get();
-    if (!projectDoc.exists) {
+    const projectResult = await query(
+      'SELECT id FROM projects WHERE id = $1',
+      [projectId]
+    );
+    
+    if (projectResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
@@ -468,10 +545,10 @@ router.post('/assign-project', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Update project with contractor assignment
-    await db.collection(Collections.PROJECTS).doc(projectId).update({
-      contractorId,
-      updatedAt: new Date()
-    });
+    await query(
+      'UPDATE projects SET contractor_id = $1, updated_at = NOW() WHERE id = $2',
+      [contractorId, projectId]
+    );
 
     return res.json({
       success: true,

@@ -56,14 +56,27 @@ if (config.nodeEnv === 'development') {
 }
 
 // Health check endpoint
-app.get('/health', (_req, res) => {
-  res.json({
-    success: true,
-    message: 'GPT API is running with Firestore',
-    timestamp: new Date().toISOString(),
-    environment: config.nodeEnv,
-    database: 'Firestore',
-  });
+app.get('/health', async (_req: express.Request, res: express.Response) => {
+  try {
+    // Test database connection
+    const { query } = await import('./config/database');
+    await query('SELECT NOW()');
+    
+    res.json({
+      success: true,
+      message: 'GPT API is running with PostgreSQL',
+      timestamp: new Date().toISOString(),
+      environment: config.nodeEnv,
+      database: 'PostgreSQL',
+    });
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      message: 'Database connection failed',
+      timestamp: new Date().toISOString(),
+      environment: config.nodeEnv,
+    });
+  }
 });
 
 // Import API routes
@@ -71,23 +84,25 @@ import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import contractorRoutes from './routes/contractors';
 import submissionRoutes from './routes/submissions';
-import dashboardRoutes from './routes/dashboard';
-import publicRoutes from './routes/public';
-import fileRoutes from './routes/files';
-import seedRoutes from './routes/seed';
+// Note: dashboard, public, files, and seed routes still use Firestore - excluded from build
+// import dashboardRoutes from './routes/dashboard';
+// import publicRoutes from './routes/public';
+// import fileRoutes from './routes/files';
+// import seedRoutes from './routes/seed';
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/contractors', contractorRoutes);
 app.use('/api/submissions', submissionRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/seed', seedRoutes);
+// Note: These routes still use Firestore and are excluded from build
+// app.use('/api/dashboard', dashboardRoutes);
+// app.use('/api/public', publicRoutes);
+// app.use('/api/files', fileRoutes);
+// app.use('/api/seed', seedRoutes);
 
 // 404 handler
-app.use((_req, res) => {
+app.use((_req: express.Request, res: express.Response) => {
   res.status(404).json({
     success: false,
     message: 'Route not found',
@@ -124,15 +139,14 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server (only if not in Firebase Functions)
-if (!config.isFirebaseFunction) {
-  httpServer.listen(config.port, () => {
-    console.log(`🚀 GPT API Server running on port ${config.port}`);
-    console.log(`📱 Environment: ${config.nodeEnv}`);
-    console.log(`🗄️ Database: Firestore`);
-    console.log(`🌐 CORS Origin: ${config.corsOrigin}`);
-  });
-}
+// Start server
+const PORT = process.env.PORT || config.port;
+httpServer.listen(PORT, () => {
+  console.log(`🚀 GPT API Server running on port ${PORT}`);
+  console.log(`📱 Environment: ${config.nodeEnv}`);
+  console.log(`🗄️ Database: PostgreSQL`);
+  console.log(`🌐 CORS Origin: ${config.corsOrigin}`);
+});
 
 export { io };
 export default app;

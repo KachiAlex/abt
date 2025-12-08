@@ -1,20 +1,21 @@
-import { Router } from 'express';
-import { db, Collections } from '../config/firestore';
-import { Submission, SubmissionType, SubmissionStatus, Priority } from '../types/firestore';
+import { Router, Request, Response } from 'express';
+import { query, rowToCamelCase, objectToSnakeCase } from '../config/database';
 import { config } from '../config';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 // Middleware to verify JWT token
-const verifyToken = (req: any, res: any, next: any) => {
+const verifyToken = (req: Request, res: Response, next: () => void): void => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Authorization token required'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -23,18 +24,20 @@ const verifyToken = (req: any, res: any, next: any) => {
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid token'
       });
+      return;
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Token expired'
       });
+      return;
     }
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
@@ -42,12 +45,13 @@ const verifyToken = (req: any, res: any, next: any) => {
 };
 
 // Middleware to check M&E officer role
-const requireMEOfficer = (req: any, res: any, next: any) => {
-  if (req.user.role !== 'ME_OFFICER' && req.user.role !== 'GOVERNMENT_ADMIN') {
-    return res.status(403).json({
+const requireMEOfficer = (req: Request, res: Response, next: () => void): void => {
+  if (!req.user || (req.user.role !== 'ME_OFFICER' && req.user.role !== 'GOVERNMENT_ADMIN')) {
+    res.status(403).json({
       success: false,
       message: 'M&E Officer access required'
     });
+    return;
   }
   next();
 };
@@ -56,7 +60,7 @@ const requireMEOfficer = (req: any, res: any, next: any) => {
  * GET /api/submissions
  * Get all submissions with filtering
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, async (req: Request, res: Response) => {
   try {
     const { 
       projectId,
@@ -69,58 +73,74 @@ router.get('/', verifyToken, async (req, res) => {
       search 
     } = req.query;
 
-    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = db.collection(Collections.SUBMISSIONS);
+    // Build WHERE clause
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    // Apply filters
     if (projectId) {
-      query = query.where('projectId', '==', projectId);
+      conditions.push(`project_id = $${paramIndex++}`);
+      params.push(projectId);
     }
     if (contractorId) {
-      query = query.where('contractorId', '==', contractorId);
+      conditions.push(`contractor_id = $${paramIndex++}`);
+      params.push(contractorId);
     }
     if (status) {
-      query = query.where('status', '==', status);
+      conditions.push(`status = $${paramIndex++}`);
+      params.push(status);
     }
     if (type) {
-      query = query.where('type', '==', type);
+      conditions.push(`type = $${paramIndex++}`);
+      params.push(type);
     }
     if (priority) {
-      query = query.where('priority', '==', priority);
+      conditions.push(`priority = $${paramIndex++}`);
+      params.push(priority);
     }
 
-    // Apply pagination
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    query = query.orderBy('submittedAt', 'desc').offset(offset).limit(limitNum);
+    // Get submissions with pagination
+    const result = await query(
+      `SELECT * FROM submissions ${whereClause} ORDER BY submitted_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, parseInt(limit as string), (parseInt(page as string) - 1) * parseInt(limit as string)]
+    );
 
-    const snapshot = await query.get();
-    let submissions = snapshot.docs.map(doc => doc.data() as Submission);
+    let submissions = result.rows.map(rowToCamelCase);
 
     // Apply search filter
     if (search) {
       const searchTerm = (search as string).toLowerCase();
-      submissions = submissions.filter(submission => 
-        submission.title.toLowerCase().includes(searchTerm) ||
-        submission.description.toLowerCase().includes(searchTerm)
+      submissions = submissions.filter((submission: any) => 
+        submission.title?.toLowerCase().includes(searchTerm) ||
+        submission.description?.toLowerCase().includes(searchTerm)
       );
     }
 
     // Get additional information for each submission
     const submissionsWithDetails = await Promise.all(
-      submissions.map(async (submission) => {
+      submissions.map(async (submission: any) => {
         // Get project information
-        const projectDoc = await db.collection(Collections.PROJECTS).doc(submission.projectId).get();
-        const project = projectDoc.exists ? projectDoc.data() : null;
+        const projectResult = await query(
+          'SELECT id, name, lga FROM projects WHERE id = $1',
+          [submission.projectId]
+        );
+        const project = projectResult.rows.length > 0 ? rowToCamelCase(projectResult.rows[0]) : null;
 
         // Get contractor information
-        const contractorDoc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(submission.contractorId).get();
-        const contractor = contractorDoc.exists ? contractorDoc.data() : null;
+        const contractorResult = await query(
+          'SELECT id, company_name FROM contractor_profiles WHERE id = $1',
+          [submission.contractorId]
+        );
+        const contractor = contractorResult.rows.length > 0 ? rowToCamelCase(contractorResult.rows[0]) : null;
 
         // Get submitter information
-        const submitterDoc = await db.collection(Collections.USERS).doc(submission.submittedBy).get();
-        const submitter = submitterDoc.exists ? submitterDoc.data() : null;
+        const submitterResult = await query(
+          'SELECT id, first_name, last_name FROM users WHERE id = $1',
+          [submission.submittedBy]
+        );
+        const submitter = submitterResult.rows.length > 0 ? rowToCamelCase(submitterResult.rows[0]) : null;
 
         return {
           ...submission,
@@ -143,18 +163,21 @@ router.get('/', verifyToken, async (req, res) => {
     );
 
     // Get total count for pagination
-    const totalSnapshot = await db.collection(Collections.SUBMISSIONS).get();
-    const total = totalSnapshot.size;
+    const totalResult = await query(
+      `SELECT COUNT(*) as count FROM submissions ${whereClause}`,
+      params
+    );
+    const total = parseInt(totalResult.rows[0].count);
 
     return res.json({
       success: true,
       data: {
         submissions: submissionsWithDetails,
         pagination: {
-          page: pageNum,
-          limit: limitNum,
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
           total,
-          pages: Math.ceil(total / limitNum)
+          pages: Math.ceil(total / parseInt(limit as string))
         }
       }
     });
@@ -172,52 +195,68 @@ router.get('/', verifyToken, async (req, res) => {
  * GET /api/submissions/:id
  * Get submission by ID
  */
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const doc = await db.collection(Collections.SUBMISSIONS).doc(id).get();
+    const result = await query(
+      'SELECT * FROM submissions WHERE id = $1',
+      [id]
+    );
     
-    if (!doc.exists) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Submission not found'
       });
     }
 
-    const submission = doc.data() as Submission;
+    const submission = rowToCamelCase(result.rows[0]);
 
     // Get project information
-    const projectDoc = await db.collection(Collections.PROJECTS).doc(submission.projectId).get();
-    const project = projectDoc.exists ? projectDoc.data() : null;
+    const projectResult = await query(
+      'SELECT * FROM projects WHERE id = $1',
+      [submission.projectId]
+    );
+    const project = projectResult.rows.length > 0 ? rowToCamelCase(projectResult.rows[0]) : null;
 
     // Get contractor information
-    const contractorDoc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(submission.contractorId).get();
-    const contractor = contractorDoc.exists ? contractorDoc.data() : null;
+    const contractorResult = await query(
+      'SELECT * FROM contractor_profiles WHERE id = $1',
+      [submission.contractorId]
+    );
+    const contractor = contractorResult.rows.length > 0 ? rowToCamelCase(contractorResult.rows[0]) : null;
 
     // Get submitter information
-    const submitterDoc = await db.collection(Collections.USERS).doc(submission.submittedBy).get();
-    const submitter = submitterDoc.exists ? submitterDoc.data() : null;
+    const submitterResult = await query(
+      'SELECT * FROM users WHERE id = $1',
+      [submission.submittedBy]
+    );
+    const submitter = submitterResult.rows.length > 0 ? rowToCamelCase(submitterResult.rows[0]) : null;
 
     // Get milestone information if exists
     let milestone = null;
     if (submission.milestoneId) {
-      const milestoneDoc = await db.collection(Collections.MILESTONES).doc(submission.milestoneId).get();
-      milestone = milestoneDoc.exists ? milestoneDoc.data() : null;
+      const milestoneResult = await query(
+        'SELECT * FROM milestones WHERE id = $1',
+        [submission.milestoneId]
+      );
+      milestone = milestoneResult.rows.length > 0 ? rowToCamelCase(milestoneResult.rows[0]) : null;
     }
 
     // Get documents
-    const documentsSnapshot = await db.collection(Collections.DOCUMENTS)
-      .where('submissionId', '==', id)
-      .get();
-    const documents = documentsSnapshot.docs.map(doc => doc.data());
+    const documentsResult = await query(
+      'SELECT * FROM documents WHERE submission_id = $1',
+      [id]
+    );
+    const documents = documentsResult.rows.map(rowToCamelCase);
 
     // Get approvals
-    const approvalsSnapshot = await db.collection(Collections.APPROVALS)
-      .where('submissionId', '==', id)
-      .orderBy('createdAt', 'desc')
-      .get();
-    const approvals = approvalsSnapshot.docs.map(doc => doc.data());
+    const approvalsResult = await query(
+      'SELECT * FROM approvals WHERE submission_id = $1 ORDER BY created_at DESC',
+      [id]
+    );
+    const approvals = approvalsResult.rows.map(rowToCamelCase);
 
     return res.json({
       success: true,
@@ -247,7 +286,7 @@ router.get('/:id', verifyToken, async (req, res) => {
  * POST /api/submissions
  * Create new submission (Contractor only)
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, async (req: Request, res: Response) => {
   try {
     const {
       projectId,
@@ -272,7 +311,14 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Check if user is a contractor
+    // Check if user is authenticated and is a contractor
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
     if (req.user.role !== 'CONTRACTOR') {
       return res.status(403).json({
         success: false,
@@ -280,19 +326,38 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
+    // Get contractor profile for this user
+    const contractorResult = await query(
+      'SELECT id FROM contractor_profiles WHERE user_id = $1 LIMIT 1',
+      [req.user.userId]
+    );
+
+    if (contractorResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contractor profile not found'
+      });
+    }
+
+    const contractorId = contractorResult.rows[0].id;
+
     // Check if project exists
-    const projectDoc = await db.collection(Collections.PROJECTS).doc(projectId).get();
-    if (!projectDoc.exists) {
+    const projectResult = await query(
+      'SELECT contractor_id FROM projects WHERE id = $1',
+      [projectId]
+    );
+    
+    if (projectResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
 
-    const project: any = projectDoc.data();
+    const project = rowToCamelCase(projectResult.rows[0]);
 
     // Check if contractor is assigned to this project
-    if (project.contractorId !== req.user.userId) {
+    if (project.contractorId !== contractorId) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to submit for this project'
@@ -300,34 +365,29 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     // Generate submission ID
-    const submissionId = `submission-${Date.now()}`;
+    const submissionId = `submission-${Date.now()}-${uuidv4().split('-')[0]}`;
 
-    // Create submission object
-    const submission: Submission = {
-      id: submissionId,
-      projectId,
-      milestoneId: milestoneId || null,
-      contractorId: req.user.userId,
-      submittedBy: req.user.userId,
-      type: type as SubmissionType,
-      title,
-      description,
-      progress: progress ? parseInt(progress) : undefined,
-      estimatedValue: estimatedValue ? parseFloat(estimatedValue) : undefined,
-      priority: priority as Priority,
-      status: SubmissionStatus.PENDING,
-      qualityScore: qualityScore ? parseFloat(qualityScore) : undefined,
-      safetyCompliance,
-      weatherImpact,
-      mediaCount: 0,
-      dueDate: dueDate ? new Date(dueDate) as any : undefined,
-      submittedAt: new Date() as any,
-      createdAt: new Date() as any,
-      updatedAt: new Date() as any
-    };
+    // Create submission
+    const insertResult = await query(
+      `INSERT INTO submissions (
+        id, project_id, milestone_id, contractor_id, submitted_by,
+        type, title, description, progress, estimated_value,
+        priority, status, quality_score, safety_compliance,
+        weather_impact, media_count, due_date, submitted_at,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW(), NOW())
+      RETURNING *`,
+      [
+        submissionId, projectId, milestoneId || null, contractorId, req.user.userId,
+        type, title, description, progress ? parseInt(progress) : null,
+        estimatedValue ? parseFloat(estimatedValue) : null,
+        priority, 'PENDING', qualityScore ? parseFloat(qualityScore) : null,
+        safetyCompliance || null, weatherImpact || null, 0,
+        dueDate ? new Date(dueDate) : null
+      ]
+    );
 
-    // Save submission to Firestore
-    await db.collection(Collections.SUBMISSIONS).doc(submissionId).set(submission);
+    const submission = rowToCamelCase(insertResult.rows[0]);
 
     return res.status(201).json({
       success: true,
@@ -348,23 +408,33 @@ router.post('/', verifyToken, async (req, res) => {
  * PUT /api/submissions/:id
  * Update submission
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
     // Check if submission exists
-    const doc = await db.collection(Collections.SUBMISSIONS).doc(id).get();
-    if (!doc.exists) {
+    const checkResult = await query(
+      'SELECT * FROM submissions WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Submission not found'
       });
     }
 
-    const submission = doc.data() as Submission;
+    const submission = rowToCamelCase(checkResult.rows[0]);
 
     // Check permissions
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
     const isAdmin = req.user.role === 'GOVERNMENT_ADMIN';
     const isMEOfficer = req.user.role === 'ME_OFFICER';
     const isContractorOwner = submission.contractorId === req.user.userId;
@@ -377,27 +447,49 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 
     // Contractors can only update pending submissions
-    if (isContractorOwner && submission.status !== SubmissionStatus.PENDING) {
+    if (isContractorOwner && submission.status !== 'PENDING') {
       return res.status(403).json({
         success: false,
         message: 'Can only update pending submissions'
       });
     }
 
-    // Remove fields that shouldn't be updated directly
+    // Build update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    // Remove fields that shouldn't be updated
     delete updateData.id;
     delete updateData.projectId;
     delete updateData.contractorId;
     delete updateData.submittedBy;
     delete updateData.createdAt;
-    updateData.updatedAt = new Date();
+
+    // Convert camelCase to snake_case and build update
+    const snakeCaseData = objectToSnakeCase(updateData);
+    for (const [key, value] of Object.entries(snakeCaseData)) {
+      if (value !== undefined && value !== null) {
+        updates.push(`${key} = $${paramIndex++}`);
+        values.push(value);
+      }
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
 
     // Update submission
-    await db.collection(Collections.SUBMISSIONS).doc(id).update(updateData);
+    await query(
+      `UPDATE submissions SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      values
+    );
 
     // Get updated submission
-    const updatedDoc = await db.collection(Collections.SUBMISSIONS).doc(id).get();
-    const updatedSubmission = updatedDoc.data() as Submission;
+    const updatedResult = await query(
+      'SELECT * FROM submissions WHERE id = $1',
+      [id]
+    );
+    const updatedSubmission = rowToCamelCase(updatedResult.rows[0]);
 
     return res.json({
       success: true,
@@ -418,7 +510,7 @@ router.put('/:id', verifyToken, async (req, res) => {
  * PUT /api/submissions/:id/review
  * Review submission (M&E Officer only)
  */
-router.put('/:id/review', verifyToken, requireMEOfficer, async (req, res) => {
+router.put('/:id/review', verifyToken, requireMEOfficer, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { action, comments, qualityScore, safetyCompliance } = req.body;
@@ -431,47 +523,84 @@ router.put('/:id/review', verifyToken, requireMEOfficer, async (req, res) => {
     }
 
     // Check if submission exists
-    const doc = await db.collection(Collections.SUBMISSIONS).doc(id).get();
-    if (!doc.exists) {
+    const checkResult = await query(
+      'SELECT * FROM submissions WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Submission not found'
       });
     }
 
+    // Determine status based on action
+    let status = 'PENDING';
+    if (action === 'APPROVED') status = 'APPROVED';
+    else if (action === 'REJECTED') status = 'REJECTED';
+    else if (action === 'FLAGGED') status = 'FLAGGED';
+    else if (action === 'REQUIRES_CLARIFICATION') status = 'REQUIRES_CLARIFICATION';
+
+    // Update submission
+    const updateParams: any[] = [];
+    let paramIndex = 1;
+    const updates: string[] = [];
+
+    updates.push(`status = $${paramIndex++}`);
+    updateParams.push(status);
     
+    updates.push(`reviewed_at = NOW()`);
+    updates.push(`reviewed_by = $${paramIndex++}`);
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    updateParams.push(req.user.userId);
+    
+    if (comments) {
+      updates.push(`review_comments = $${paramIndex++}`);
+      updateParams.push(comments);
+    }
+    if (qualityScore) {
+      updates.push(`quality_score = $${paramIndex++}`);
+      updateParams.push(parseFloat(qualityScore));
+    }
+    if (safetyCompliance) {
+      updates.push(`safety_compliance = $${paramIndex++}`);
+      updateParams.push(safetyCompliance);
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    updateParams.push(id);
 
-    // Update submission status
-    const updateData: any = {
-      status: action === 'APPROVED' ? SubmissionStatus.APPROVED : 
-              action === 'REJECTED' ? SubmissionStatus.REJECTED :
-              action === 'FLAGGED' ? SubmissionStatus.FLAGGED :
-              SubmissionStatus.REQUIRES_CLARIFICATION,
-      reviewedAt: new Date(),
-      reviewedBy: req.user.userId,
-      reviewComments: comments,
-      updatedAt: new Date()
-    };
-
-    if (qualityScore) updateData.qualityScore = parseFloat(qualityScore);
-    if (safetyCompliance) updateData.safetyCompliance = safetyCompliance;
-
-    await db.collection(Collections.SUBMISSIONS).doc(id).update(updateData);
+    await query(
+      `UPDATE submissions SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      updateParams
+    );
 
     // Create approval record
-    const approvalId = `approval-${Date.now()}`;
-    await db.collection(Collections.APPROVALS).doc(approvalId).set({
-      id: approvalId,
-      submissionId: id,
-      reviewerId: req.user.userId,
-      action,
-      comments,
-      createdAt: new Date()
-    });
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    const approvalId = `approval-${Date.now()}-${uuidv4().split('-')[0]}`;
+    await query(
+      `INSERT INTO approvals (id, submission_id, reviewer_id, action, comments, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [approvalId, id, req.user.userId, action, comments || null]
+    );
 
     // Get updated submission
-    const updatedDoc = await db.collection(Collections.SUBMISSIONS).doc(id).get();
-    const updatedSubmission = updatedDoc.data() as Submission;
+    const updatedResult = await query(
+      'SELECT * FROM submissions WHERE id = $1',
+      [id]
+    );
+    const updatedSubmission = rowToCamelCase(updatedResult.rows[0]);
 
     return res.json({
       success: true,
@@ -492,22 +621,32 @@ router.put('/:id/review', verifyToken, requireMEOfficer, async (req, res) => {
  * DELETE /api/submissions/:id
  * Delete submission
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     // Check if submission exists
-    const doc = await db.collection(Collections.SUBMISSIONS).doc(id).get();
-    if (!doc.exists) {
+    const checkResult = await query(
+      'SELECT * FROM submissions WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Submission not found'
       });
     }
 
-    const submission = doc.data() as Submission;
+    const submission = rowToCamelCase(checkResult.rows[0]);
 
     // Check permissions
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
     const isAdmin = req.user.role === 'GOVERNMENT_ADMIN';
     const isContractorOwner = submission.contractorId === req.user.userId;
 
@@ -518,8 +657,11 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Delete submission
-    await db.collection(Collections.SUBMISSIONS).doc(id).delete();
+    // Delete submission (cascade will handle related records)
+    await query(
+      'DELETE FROM submissions WHERE id = $1',
+      [id]
+    );
 
     return res.json({
       success: true,
@@ -539,32 +681,32 @@ router.delete('/:id', verifyToken, async (req, res) => {
  * GET /api/submissions/stats
  * Get submission statistics
  */
-router.get('/stats/overview', verifyToken, async (_req, res) => {
+router.get('/stats/overview', verifyToken, async (_req: Request, res: Response) => {
   try {
-    const snapshot = await db.collection(Collections.SUBMISSIONS).get();
-    const submissions = snapshot.docs.map(doc => doc.data() as Submission);
+    const result = await query('SELECT * FROM submissions');
+    const submissions = result.rows.map(rowToCamelCase);
 
     const stats = {
       total: submissions.length,
       byStatus: {
-        [SubmissionStatus.PENDING]: submissions.filter(s => s.status === SubmissionStatus.PENDING).length,
-        [SubmissionStatus.UNDER_REVIEW]: submissions.filter(s => s.status === SubmissionStatus.UNDER_REVIEW).length,
-        [SubmissionStatus.APPROVED]: submissions.filter(s => s.status === SubmissionStatus.APPROVED).length,
-        [SubmissionStatus.REJECTED]: submissions.filter(s => s.status === SubmissionStatus.REJECTED).length,
-        [SubmissionStatus.FLAGGED]: submissions.filter(s => s.status === SubmissionStatus.FLAGGED).length,
-        [SubmissionStatus.REQUIRES_CLARIFICATION]: submissions.filter(s => s.status === SubmissionStatus.REQUIRES_CLARIFICATION).length,
+        PENDING: submissions.filter(s => s.status === 'PENDING').length,
+        UNDER_REVIEW: submissions.filter(s => s.status === 'UNDER_REVIEW').length,
+        APPROVED: submissions.filter(s => s.status === 'APPROVED').length,
+        REJECTED: submissions.filter(s => s.status === 'REJECTED').length,
+        FLAGGED: submissions.filter(s => s.status === 'FLAGGED').length,
+        REQUIRES_CLARIFICATION: submissions.filter(s => s.status === 'REQUIRES_CLARIFICATION').length,
       },
       byType: {
-        [SubmissionType.MILESTONE]: submissions.filter(s => s.type === SubmissionType.MILESTONE).length,
-        [SubmissionType.PROGRESS]: submissions.filter(s => s.type === SubmissionType.PROGRESS).length,
-        [SubmissionType.ISSUE]: submissions.filter(s => s.type === SubmissionType.ISSUE).length,
-        [SubmissionType.SAFETY]: submissions.filter(s => s.type === SubmissionType.SAFETY).length,
-        [SubmissionType.QUALITY]: submissions.filter(s => s.type === SubmissionType.QUALITY).length,
-        [SubmissionType.DELAY]: submissions.filter(s => s.type === SubmissionType.DELAY).length,
-        [SubmissionType.GENERAL]: submissions.filter(s => s.type === SubmissionType.GENERAL).length,
+        MILESTONE: submissions.filter(s => s.type === 'MILESTONE').length,
+        PROGRESS: submissions.filter(s => s.type === 'PROGRESS').length,
+        ISSUE: submissions.filter(s => s.type === 'ISSUE').length,
+        SAFETY: submissions.filter(s => s.type === 'SAFETY').length,
+        QUALITY: submissions.filter(s => s.type === 'QUALITY').length,
+        DELAY: submissions.filter(s => s.type === 'DELAY').length,
+        GENERAL: submissions.filter(s => s.type === 'GENERAL').length,
       },
       averageQualityScore: submissions.filter(s => s.qualityScore).length > 0 
-        ? submissions.filter(s => s.qualityScore).reduce((sum, s) => sum + s.qualityScore!, 0) / submissions.filter(s => s.qualityScore).length 
+        ? submissions.filter(s => s.qualityScore).reduce((sum, s) => sum + (s.qualityScore || 0), 0) / submissions.filter(s => s.qualityScore).length 
         : 0
     };
 

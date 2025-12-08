@@ -1,20 +1,21 @@
-import { Router } from 'express';
-import { db, Collections } from '../config/firestore';
-import { Project, ProjectCategory, ProjectStatus, Priority } from '../types/firestore';
+import { Router, Request, Response } from 'express';
+import { query, rowToCamelCase, objectToSnakeCase } from '../config/database';
 import { config } from '../config';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 // Middleware to verify JWT token
-const verifyToken = (req: any, res: any, next: any) => {
+const verifyToken = (req: Request, res: Response, next: () => void): void => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Authorization token required'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -23,18 +24,20 @@ const verifyToken = (req: any, res: any, next: any) => {
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid token'
       });
+      return;
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Token expired'
       });
+      return;
     }
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
@@ -42,12 +45,13 @@ const verifyToken = (req: any, res: any, next: any) => {
 };
 
 // Middleware to check admin role
-const requireAdmin = (req: any, res: any, next: any) => {
-  if (req.user.role !== 'GOVERNMENT_ADMIN') {
-    return res.status(403).json({
+const requireAdmin = (req: Request, res: Response, next: () => void): void => {
+  if (!req.user || req.user.role !== 'GOVERNMENT_ADMIN') {
+    res.status(403).json({
       success: false,
       message: 'Admin access required'
     });
+    return;
   }
   next();
 };
@@ -56,7 +60,7 @@ const requireAdmin = (req: any, res: any, next: any) => {
  * GET /api/projects
  * Get all projects with filtering
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, async (req: Request, res: Response) => {
   try {
     const { 
       status, 
@@ -69,36 +73,45 @@ router.get('/', verifyToken, async (req, res) => {
       search 
     } = req.query;
 
-    let query: any = db.collection(Collections.PROJECTS);
+    // Build WHERE clause
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    // Apply filters
     if (status) {
-      query = query.where('status', '==', status);
+      conditions.push(`status = $${paramIndex++}`);
+      params.push(status);
     }
     if (category) {
-      query = query.where('category', '==', category);
+      conditions.push(`category = $${paramIndex++}`);
+      params.push(category);
     }
-    // Note: LGA filter removed from query since it can be array or string
     if (priority) {
-      query = query.where('priority', '==', priority);
+      conditions.push(`priority = $${paramIndex++}`);
+      params.push(priority);
     }
     if (contractorId) {
-      query = query.where('contractorId', '==', contractorId);
+      conditions.push(`contractor_id = $${paramIndex++}`);
+      params.push(contractorId);
     }
 
-    // Get all projects (we'll filter LGA and apply pagination in-memory)
-    const snapshot = await query.get();
-    let projects = snapshot.docs.map((doc: any) => doc.data() as Project);
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    // Apply LGA filter (support both single and array LGAs)
+    // Get all projects
+    const result = await query(
+      `SELECT * FROM projects ${whereClause} ORDER BY created_at DESC`,
+      params
+    );
+
+    let projects = result.rows.map(rowToCamelCase);
+
+    // Apply LGA filter (can be array or string in database)
     if (lga) {
       const lgaFilter = Array.isArray(lga) ? lga : [lga];
       projects = projects.filter((project: any) => {
         if (Array.isArray(project.lga)) {
-          // If project has multiple LGAs, check if any match
           return project.lga.some((pLga: string) => lgaFilter.includes(pLga));
         } else {
-          // If project has single LGA, check if it matches
           return lgaFilter.includes(project.lga);
         }
       });
@@ -109,16 +122,16 @@ router.get('/', verifyToken, async (req, res) => {
       const searchTerm = (search as string).toLowerCase();
       projects = projects.filter((project: any) => {
         const lgaText = Array.isArray(project.lga) ? project.lga.join(' ') : project.lga;
-        return project.name.toLowerCase().includes(searchTerm) ||
-               project.description.toLowerCase().includes(searchTerm) ||
-               lgaText.toLowerCase().includes(searchTerm);
+        return project.name?.toLowerCase().includes(searchTerm) ||
+               project.description?.toLowerCase().includes(searchTerm) ||
+               lgaText?.toLowerCase().includes(searchTerm);
       });
     }
 
     // Apply pagination
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const total = projects.length; // Total after filtering
+    const total = projects.length;
     const offset = (pageNum - 1) * limitNum;
     projects = projects.slice(offset, offset + limitNum);
 
@@ -148,45 +161,49 @@ router.get('/', verifyToken, async (req, res) => {
  * GET /api/projects/:id
  * Get project by ID
  */
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const doc = await db.collection(Collections.PROJECTS).doc(id).get();
+    const result = await query(
+      'SELECT * FROM projects WHERE id = $1',
+      [id]
+    );
     
-    if (!doc.exists) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
 
-    const project = doc.data() as Project;
+    const project = rowToCamelCase(result.rows[0]);
 
     // Get contractor information if exists
     let contractor = null;
     if (project.contractorId) {
-      const contractorDoc = await db.collection(Collections.CONTRACTOR_PROFILES)
-        .doc(project.contractorId).get();
-      if (contractorDoc.exists) {
-        contractor = contractorDoc.data();
+      const contractorResult = await query(
+        'SELECT * FROM contractor_profiles WHERE id = $1',
+        [project.contractorId]
+      );
+      if (contractorResult.rows.length > 0) {
+        contractor = rowToCamelCase(contractorResult.rows[0]);
       }
     }
 
     // Get milestones
-    const milestonesSnapshot = await db.collection(Collections.MILESTONES)
-      .where('projectId', '==', id)
-      .orderBy('order', 'asc')
-      .get();
-    const milestones = milestonesSnapshot.docs.map(doc => doc.data());
+    const milestonesResult = await query(
+      'SELECT * FROM milestones WHERE project_id = $1 ORDER BY "order" ASC',
+      [id]
+    );
+    const milestones = milestonesResult.rows.map(rowToCamelCase);
 
     // Get recent submissions
-    const submissionsSnapshot = await db.collection(Collections.SUBMISSIONS)
-      .where('projectId', '==', id)
-      .orderBy('submittedAt', 'desc')
-      .limit(5)
-      .get();
-    const recentSubmissions = submissionsSnapshot.docs.map(doc => doc.data());
+    const submissionsResult = await query(
+      'SELECT * FROM submissions WHERE project_id = $1 ORDER BY submitted_at DESC LIMIT 5',
+      [id]
+    );
+    const recentSubmissions = submissionsResult.rows.map(rowToCamelCase);
 
     return res.json({
       success: true,
@@ -213,7 +230,7 @@ router.get('/:id', verifyToken, async (req, res) => {
  * POST /api/projects
  * Create new project (Admin only)
  */
-router.post('/', verifyToken, requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req: Request, res: Response) => {
   try {
     const {
       name,
@@ -241,39 +258,35 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
 
     // Generate project ID
-    const projectId = `project-${Date.now()}`;
+    const projectId = `project-${Date.now()}-${uuidv4().split('-')[0]}`;
 
-    // Create project object
-    const project: Project = {
-      id: projectId,
-      name,
-      description,
-      category: category as ProjectCategory,
-      lga,
-      priority: priority as Priority,
-      status: ProjectStatus.NOT_STARTED,
-      progress: 0,
-      budget: parseFloat(budget),
-      allocatedBudget: allocatedBudget ? parseFloat(allocatedBudget) : parseFloat(budget),
-      spentBudget: 0,
-      fundingSource,
-      startDate: new Date(startDate) as any,
-      expectedEndDate: new Date(expectedEndDate) as any,
-      beneficiaries,
-      contractorId,
-      projectManagerId,
-      location,
-      isPublic: true,
-      qualityScore: 0,
-      safetyCompliance: 'Not Started',
-      weatherDelay: 0,
-      safetyIncidents: 0,
-      createdAt: new Date() as any,
-      updatedAt: new Date() as any
-    };
+    // Handle location as JSONB
+    const locationJson = location ? JSON.stringify(location) : null;
+    // Handle LGA as JSON if array, otherwise as text
+    const lgaValue = Array.isArray(lga) ? JSON.stringify(lga) : lga;
 
-    // Save project to Firestore
-    await db.collection(Collections.PROJECTS).doc(projectId).set(project);
+    // Create project in PostgreSQL
+    const result = await query(
+      `INSERT INTO projects (
+        id, name, description, category, lga, priority, status, progress,
+        budget, allocated_budget, spent_budget, funding_source,
+        start_date, expected_end_date, beneficiaries, contractor_id,
+        project_manager_id, location, is_public, quality_score,
+        safety_compliance, weather_delay, safety_incidents,
+        created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), NOW()
+      ) RETURNING *`,
+      [
+        projectId, name, description, category, lgaValue, priority, 'NOT_STARTED', 0,
+        parseFloat(budget), allocatedBudget ? parseFloat(allocatedBudget) : parseFloat(budget), 0,
+        fundingSource, new Date(startDate), new Date(expectedEndDate), beneficiaries,
+        contractorId || null, projectManagerId || null, locationJson, true, 0,
+        'Not Started', 0, 0
+      ]
+    );
+
+    const project = rowToCamelCase(result.rows[0]);
 
     return res.status(201).json({
       success: true,
@@ -294,22 +307,33 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
  * PUT /api/projects/:id
  * Update project
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
     // Check if project exists
-    const doc = await db.collection(Collections.PROJECTS).doc(id).get();
-    if (!doc.exists) {
+    const checkResult = await query(
+      'SELECT * FROM projects WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
 
+    const project = rowToCamelCase(checkResult.rows[0]);
+
     // Check permissions
-    const project = doc.data() as Project;
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
     const isAdmin = req.user.role === 'GOVERNMENT_ADMIN';
     const isProjectManager = project.projectManagerId === req.user.userId;
     const isContractor = project.contractorId && req.user.role === 'CONTRACTOR';
@@ -321,17 +345,45 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Remove fields that shouldn't be updated directly
+    // Build update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    // Remove fields that shouldn't be updated
     delete updateData.id;
     delete updateData.createdAt;
-    updateData.updatedAt = new Date();
+
+    // Convert camelCase to snake_case and build update
+    const snakeCaseData = objectToSnakeCase(updateData);
+    for (const [key, value] of Object.entries(snakeCaseData)) {
+      if (key === 'location' && value) {
+        updates.push(`location = $${paramIndex++}`);
+        values.push(JSON.stringify(value));
+      } else if (key === 'lga' && value) {
+        updates.push(`lga = $${paramIndex++}`);
+        values.push(Array.isArray(value) ? JSON.stringify(value) : value);
+      } else if (value !== undefined && value !== null) {
+        updates.push(`${key} = $${paramIndex++}`);
+        values.push(value);
+      }
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
 
     // Update project
-    await db.collection(Collections.PROJECTS).doc(id).update(updateData);
+    await query(
+      `UPDATE projects SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      values
+    );
 
     // Get updated project
-    const updatedDoc = await db.collection(Collections.PROJECTS).doc(id).get();
-    const updatedProject = updatedDoc.data() as Project;
+    const updatedResult = await query(
+      'SELECT * FROM projects WHERE id = $1',
+      [id]
+    );
+    const updatedProject = rowToCamelCase(updatedResult.rows[0]);
 
     return res.json({
       success: true,
@@ -352,21 +404,28 @@ router.put('/:id', verifyToken, async (req, res) => {
  * DELETE /api/projects/:id
  * Delete project (Admin only)
  */
-router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
+router.delete('/:id', verifyToken, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     // Check if project exists
-    const doc = await db.collection(Collections.PROJECTS).doc(id).get();
-    if (!doc.exists) {
+    const result = await query(
+      'SELECT id FROM projects WHERE id = $1',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
 
-    // Delete project
-    await db.collection(Collections.PROJECTS).doc(id).delete();
+    // Delete project (cascade will handle related records)
+    await query(
+      'DELETE FROM projects WHERE id = $1',
+      [id]
+    );
 
     return res.json({
       success: true,
@@ -386,38 +445,38 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
  * GET /api/projects/stats
  * Get project statistics
  */
-router.get('/stats/overview', verifyToken, async (_req, res) => {
+router.get('/stats/overview', verifyToken, async (_req: Request, res: Response) => {
   try {
-    const snapshot = await db.collection(Collections.PROJECTS).get();
-    const projects = snapshot.docs.map(doc => doc.data() as Project);
+    const result = await query('SELECT * FROM projects');
+    const projects = result.rows.map(rowToCamelCase);
 
     const stats = {
       total: projects.length,
       byStatus: {
-        [ProjectStatus.NOT_STARTED]: projects.filter(p => p.status === ProjectStatus.NOT_STARTED).length,
-        [ProjectStatus.IN_PROGRESS]: projects.filter(p => p.status === ProjectStatus.IN_PROGRESS).length,
-        [ProjectStatus.NEAR_COMPLETION]: projects.filter(p => p.status === ProjectStatus.NEAR_COMPLETION).length,
-        [ProjectStatus.COMPLETED]: projects.filter(p => p.status === ProjectStatus.COMPLETED).length,
-        [ProjectStatus.DELAYED]: projects.filter(p => p.status === ProjectStatus.DELAYED).length,
-        [ProjectStatus.ON_HOLD]: projects.filter(p => p.status === ProjectStatus.ON_HOLD).length,
-        [ProjectStatus.CANCELLED]: projects.filter(p => p.status === ProjectStatus.CANCELLED).length,
+        NOT_STARTED: projects.filter(p => p.status === 'NOT_STARTED').length,
+        IN_PROGRESS: projects.filter(p => p.status === 'IN_PROGRESS').length,
+        NEAR_COMPLETION: projects.filter(p => p.status === 'NEAR_COMPLETION').length,
+        COMPLETED: projects.filter(p => p.status === 'COMPLETED').length,
+        DELAYED: projects.filter(p => p.status === 'DELAYED').length,
+        ON_HOLD: projects.filter(p => p.status === 'ON_HOLD').length,
+        CANCELLED: projects.filter(p => p.status === 'CANCELLED').length,
       },
       byCategory: {
-        [ProjectCategory.TRANSPORTATION]: projects.filter(p => p.category === ProjectCategory.TRANSPORTATION).length,
-        [ProjectCategory.HEALTHCARE]: projects.filter(p => p.category === ProjectCategory.HEALTHCARE).length,
-        [ProjectCategory.EDUCATION]: projects.filter(p => p.category === ProjectCategory.EDUCATION).length,
-        [ProjectCategory.WATER_SANITATION]: projects.filter(p => p.category === ProjectCategory.WATER_SANITATION).length,
-        [ProjectCategory.HOUSING]: projects.filter(p => p.category === ProjectCategory.HOUSING).length,
-        [ProjectCategory.AGRICULTURE]: projects.filter(p => p.category === ProjectCategory.AGRICULTURE).length,
-        [ProjectCategory.ENERGY]: projects.filter(p => p.category === ProjectCategory.ENERGY).length,
-        [ProjectCategory.ICT]: projects.filter(p => p.category === ProjectCategory.ICT).length,
-        [ProjectCategory.TOURISM]: projects.filter(p => p.category === ProjectCategory.TOURISM).length,
-        [ProjectCategory.ENVIRONMENT]: projects.filter(p => p.category === ProjectCategory.ENVIRONMENT).length,
+        TRANSPORTATION: projects.filter(p => p.category === 'TRANSPORTATION').length,
+        HEALTHCARE: projects.filter(p => p.category === 'HEALTHCARE').length,
+        EDUCATION: projects.filter(p => p.category === 'EDUCATION').length,
+        WATER_SANITATION: projects.filter(p => p.category === 'WATER_SANITATION').length,
+        HOUSING: projects.filter(p => p.category === 'HOUSING').length,
+        AGRICULTURE: projects.filter(p => p.category === 'AGRICULTURE').length,
+        ENERGY: projects.filter(p => p.category === 'ENERGY').length,
+        ICT: projects.filter(p => p.category === 'ICT').length,
+        TOURISM: projects.filter(p => p.category === 'TOURISM').length,
+        ENVIRONMENT: projects.filter(p => p.category === 'ENVIRONMENT').length,
       },
-      totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
-      allocatedBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget), 0),
-      spentBudget: projects.reduce((sum, p) => sum + p.spentBudget, 0),
-      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length : 0
+      totalBudget: projects.reduce((sum, p) => sum + (p.budget || 0), 0),
+      allocatedBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget || 0), 0),
+      spentBudget: projects.reduce((sum, p) => sum + (p.spentBudget || 0), 0),
+      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length : 0
     };
 
     return res.json({
@@ -438,26 +497,26 @@ router.get('/stats/overview', verifyToken, async (_req, res) => {
  * GET /api/projects/stats
  * Alias to stats overview for frontend compatibility
  */
-router.get('/stats', verifyToken, async (_req, res) => {
+router.get('/stats', verifyToken, async (_req: Request, res: Response) => {
   try {
-    const snapshot = await db.collection(Collections.PROJECTS).get();
-    const projects = snapshot.docs.map(doc => doc.data() as Project);
+    const result = await query('SELECT * FROM projects');
+    const projects = result.rows.map(rowToCamelCase);
 
     const stats = {
       total: projects.length,
       byStatus: {
-        [ProjectStatus.NOT_STARTED]: projects.filter(p => p.status === ProjectStatus.NOT_STARTED).length,
-        [ProjectStatus.IN_PROGRESS]: projects.filter(p => p.status === ProjectStatus.IN_PROGRESS).length,
-        [ProjectStatus.NEAR_COMPLETION]: projects.filter(p => p.status === ProjectStatus.NEAR_COMPLETION).length,
-        [ProjectStatus.COMPLETED]: projects.filter(p => p.status === ProjectStatus.COMPLETED).length,
-        [ProjectStatus.DELAYED]: projects.filter(p => p.status === ProjectStatus.DELAYED).length,
-        [ProjectStatus.ON_HOLD]: projects.filter(p => p.status === ProjectStatus.ON_HOLD).length,
-        [ProjectStatus.CANCELLED]: projects.filter(p => p.status === ProjectStatus.CANCELLED).length,
+        NOT_STARTED: projects.filter(p => p.status === 'NOT_STARTED').length,
+        IN_PROGRESS: projects.filter(p => p.status === 'IN_PROGRESS').length,
+        NEAR_COMPLETION: projects.filter(p => p.status === 'NEAR_COMPLETION').length,
+        COMPLETED: projects.filter(p => p.status === 'COMPLETED').length,
+        DELAYED: projects.filter(p => p.status === 'DELAYED').length,
+        ON_HOLD: projects.filter(p => p.status === 'ON_HOLD').length,
+        CANCELLED: projects.filter(p => p.status === 'CANCELLED').length,
       },
-      totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
-      allocatedBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget), 0),
-      spentBudget: projects.reduce((sum, p) => sum + p.spentBudget, 0),
-      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length : 0
+      totalBudget: projects.reduce((sum, p) => sum + (p.budget || 0), 0),
+      allocatedBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget || 0), 0),
+      spentBudget: projects.reduce((sum, p) => sum + (p.spentBudget || 0), 0),
+      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length : 0
     };
 
     return res.json({ success: true, data: { stats } });

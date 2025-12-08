@@ -21,13 +21,54 @@ const getApp = (): any => {
     const helmet = require('helmet');
     const compression = require('compression');
     
-    // Load config
-    require('./config/firestore');
-    require('./config');
+    // Load config - defer firestore until routes actually need it
+    const { config } = require('./config');
     
-    // Setup middleware
-    app.use(cors({ origin: true }));
-    app.use(helmet());
+    // Only load firestore if not in deployment analysis mode
+    // Firebase sets FUNCTION_TARGET during deployment analysis
+    if (!process.env.FUNCTION_TARGET || process.env.FUNCTION_TARGET === 'apiV1') {
+      try {
+    require('./config/firestore');
+      } catch (e) {
+        // Ignore during deployment analysis
+      }
+    }
+    
+    // Setup CORS - must be before other middleware
+    // Allow production frontend and localhost for development
+    const allowedOrigins = [
+      'https://abt-abia-tracker.web.app',
+      'https://abt-abia-tracker.firebaseapp.com',
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ];
+    
+    app.use(cors({
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          // For development, allow all origins
+          if (config.nodeEnv === 'development') {
+            callback(null, true);
+          } else {
+            callback(new Error('Not allowed by CORS'));
+          }
+        }
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Authorization'],
+    }));
+    
+    // Configure helmet to not interfere with CORS
+    app.use(helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginEmbedderPolicy: false,
+    }));
     app.use(compression());
     app.use(express.json());
     
