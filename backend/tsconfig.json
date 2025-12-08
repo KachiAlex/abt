@@ -5,6 +5,7 @@
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
+    "skipDefaultLibCheck": true,
     "removeComments": true,
     "strict": true,
     "esModuleInterop": true,
@@ -24,7 +25,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
+  "files": [
     "src/server.ts",
     "src/config/index.ts",
     "src/config/database.ts",
@@ -41,11 +42,13 @@
     "**/*.spec.ts",
     "**/tests/**",
     "**/__tests__/**",
+    "src/tests/**",
     "src/tests",
     "src/routes/dashboard.ts",
     "src/routes/public.ts",
     "src/routes/files.ts",
     "src/routes/seed.ts",
+    "src/scripts/**",
     "src/scripts",
     "src/config/firestore.ts",
     "src/functions.ts",
