@@ -14,6 +14,7 @@
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
+    "types": ["node", "jest"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -28,12 +29,13 @@
   "files": [
     "src/server.ts",
     "src/config/index.ts",
-    "src/config/database.ts",
+    "src/config/firestore.ts",
     "src/routes/auth.ts",
     "src/routes/projects.ts",
     "src/routes/contractors.ts",
     "src/routes/submissions.ts",
-    "src/types/express.d.ts"
+    "src/types/express.d.ts",
+    "src/types/firestore.ts"
   ],
   "exclude": [
     "node_modules",
@@ -50,9 +52,8 @@
     "src/routes/seed.ts",
     "src/scripts/**",
     "src/scripts",
-    "src/config/firestore.ts",
+    "src/config/database.ts",
     "src/functions.ts",
-    "src/types/firestore.ts",
     "src/services/fileUploadService.ts"
   ]
 }
