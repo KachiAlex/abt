@@ -1,8 +1,15 @@
 import { Router, Request, Response } from 'express';
-import { query, rowToCamelCase, objectToSnakeCase } from '../config/database';
-import { config } from '../config';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
+import { config } from '../config';
+import { projectRepository } from '../repositories/projectRepository';
+import { contractorRepository } from '../repositories/contractorRepository';
+import {
+  CreateProjectInput,
+  ListProjectsParams,
+  UpdateProjectInput,
+} from '../types/models';
+import { ProjectCategory, ProjectStatus } from '../types/firestore';
+import { query, rowToCamelCase } from '../config/database';
 
 const router = Router();
 
@@ -62,97 +69,44 @@ const requireAdmin = (req: Request, res: Response, next: () => void): void => {
  */
 router.get('/', verifyToken, async (req: Request, res: Response) => {
   try {
-    const { 
-      status, 
-      category, 
-      lga, 
-      priority, 
-      contractorId,
-      page = 1, 
-      limit = 20,
-      search 
-    } = req.query;
+    const page = Math.max(parseInt((req.query.page as string) || '1', 10), 1);
+    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || '20', 10), 1), 100);
+    const lga = req.query.lga
+      ? Array.isArray(req.query.lga)
+        ? (req.query.lga as string[])
+        : [req.query.lga as string]
+      : undefined;
 
-    // Build WHERE clause
-    const conditions: string[] = [];
-    const params: any[] = [];
-    let paramIndex = 1;
+    const filters: ListProjectsParams = {
+      status: typeof req.query.status === 'string' ? req.query.status : undefined,
+      category: typeof req.query.category === 'string' ? req.query.category : undefined,
+      priority: typeof req.query.priority === 'string' ? req.query.priority : undefined,
+      contractorId: typeof req.query.contractorId === 'string' ? req.query.contractorId : undefined,
+      lga,
+      search: typeof req.query.search === 'string' ? req.query.search : undefined,
+      page,
+      limit,
+    };
 
-    if (status) {
-      conditions.push(`status = $${paramIndex++}`);
-      params.push(status);
-    }
-    if (category) {
-      conditions.push(`category = $${paramIndex++}`);
-      params.push(category);
-    }
-    if (priority) {
-      conditions.push(`priority = $${paramIndex++}`);
-      params.push(priority);
-    }
-    if (contractorId) {
-      conditions.push(`contractor_id = $${paramIndex++}`);
-      params.push(contractorId);
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    // Get all projects
-    const result = await query(
-      `SELECT * FROM projects ${whereClause} ORDER BY created_at DESC`,
-      params
-    );
-
-    let projects = result.rows.map(rowToCamelCase);
-
-    // Apply LGA filter (can be array or string in database)
-    if (lga) {
-      const lgaFilter = Array.isArray(lga) ? lga : [lga];
-      projects = projects.filter((project: any) => {
-        if (Array.isArray(project.lga)) {
-          return project.lga.some((pLga: string) => lgaFilter.includes(pLga));
-        } else {
-          return lgaFilter.includes(project.lga);
-        }
-      });
-    }
-
-    // Apply search filter
-    if (search) {
-      const searchTerm = (search as string).toLowerCase();
-      projects = projects.filter((project: any) => {
-        const lgaText = Array.isArray(project.lga) ? project.lga.join(' ') : project.lga;
-        return project.name?.toLowerCase().includes(searchTerm) ||
-               project.description?.toLowerCase().includes(searchTerm) ||
-               lgaText?.toLowerCase().includes(searchTerm);
-      });
-    }
-
-    // Apply pagination
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const total = projects.length;
-    const offset = (pageNum - 1) * limitNum;
-    projects = projects.slice(offset, offset + limitNum);
+    const { projects, total } = await projectRepository.listWithFilters(filters);
 
     return res.json({
       success: true,
       data: {
         projects,
         pagination: {
-          page: pageNum,
-          limit: limitNum,
+          page,
+          limit,
           total,
-          pages: Math.ceil(total / limitNum)
-        }
-      }
+          pages: Math.ceil(total / limit),
+        },
+      },
     });
-
   } catch (error: any) {
     console.error('Get projects error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to get projects'
+      message: 'Failed to get projects',
     });
   }
 });
@@ -165,45 +119,17 @@ router.get('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const result = await query(
-      'SELECT * FROM projects WHERE id = $1',
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
+    const project = await projectRepository.findById(id);
+    if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found'
+        message: 'Project not found',
       });
     }
 
-    const project = rowToCamelCase(result.rows[0]);
-
-    // Get contractor information if exists
-    let contractor = null;
-    if (project.contractorId) {
-      const contractorResult = await query(
-        'SELECT * FROM contractor_profiles WHERE id = $1',
-        [project.contractorId]
-      );
-      if (contractorResult.rows.length > 0) {
-        contractor = rowToCamelCase(contractorResult.rows[0]);
-      }
-    }
-
-    // Get milestones
-    const milestonesResult = await query(
-      'SELECT * FROM milestones WHERE project_id = $1 ORDER BY "order" ASC',
-      [id]
-    );
-    const milestones = milestonesResult.rows.map(rowToCamelCase);
-
-    // Get recent submissions
-    const submissionsResult = await query(
-      'SELECT * FROM submissions WHERE project_id = $1 ORDER BY submitted_at DESC LIMIT 5',
-      [id]
-    );
-    const recentSubmissions = submissionsResult.rows.map(rowToCamelCase);
+    const contractor = await contractorRepository.findById(project.contractorId || '');
+    const milestones = await projectRepository.getMilestones(id);
+    const recentSubmissions = await projectRepository.getRecentSubmissions(id);
 
     return res.json({
       success: true,
@@ -212,16 +138,15 @@ router.get('/:id', verifyToken, async (req: Request, res: Response) => {
           ...project,
           contractor,
           milestones,
-          recentSubmissions
-        }
-      }
+          recentSubmissions,
+        },
+      },
     });
-
   } catch (error: any) {
     console.error('Get project error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to get project'
+      message: 'Failed to get project',
     });
   }
 });
@@ -232,73 +157,43 @@ router.get('/:id', verifyToken, async (req: Request, res: Response) => {
  */
 router.post('/', verifyToken, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const {
-      name,
-      description,
-      category,
-      lga,
-      priority = 'MEDIUM',
-      budget,
-      allocatedBudget,
-      fundingSource,
-      startDate,
-      expectedEndDate,
-      beneficiaries,
-      contractorId,
-      projectManagerId,
-      location
-    } = req.body;
+    const payload: CreateProjectInput = {
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      lga: Array.isArray(req.body.lga) ? req.body.lga : [req.body.lga],
+      priority: req.body.priority || 'MEDIUM',
+      budget: parseFloat(req.body.budget),
+      allocatedBudget: req.body.allocatedBudget ? parseFloat(req.body.allocatedBudget) : undefined,
+      fundingSource: req.body.fundingSource,
+      startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+      expectedEndDate: req.body.expectedEndDate ? new Date(req.body.expectedEndDate) : null,
+      beneficiaries: req.body.beneficiaries,
+      contractorId: req.body.contractorId || null,
+      projectManagerId: req.body.projectManagerId || null,
+      location: req.body.location || null,
+      isPublic: typeof req.body.isPublic === 'boolean' ? req.body.isPublic : true,
+    };
 
-    // Validate required fields
-    if (!name || !description || !category || !lga || !budget || !fundingSource || !startDate || !expectedEndDate) {
+    if (!payload.name || !payload.category || !payload.lga || !payload.budget || !payload.fundingSource || !payload.startDate || !payload.expectedEndDate) {
       return res.status(400).json({
         success: false,
-        message: 'Required fields: name, description, category, lga, budget, fundingSource, startDate, expectedEndDate'
+        message: 'Required fields: name, category, lga, budget, fundingSource, startDate, expectedEndDate',
       });
     }
 
-    // Generate project ID
-    const projectId = `project-${Date.now()}-${uuidv4().split('-')[0]}`;
-
-    // Handle location as JSONB
-    const locationJson = location ? JSON.stringify(location) : null;
-    // Handle LGA as JSON if array, otherwise as text
-    const lgaValue = Array.isArray(lga) ? JSON.stringify(lga) : lga;
-
-    // Create project in PostgreSQL
-    const result = await query(
-      `INSERT INTO projects (
-        id, name, description, category, lga, priority, status, progress,
-        budget, allocated_budget, spent_budget, funding_source,
-        start_date, expected_end_date, beneficiaries, contractor_id,
-        project_manager_id, location, is_public, quality_score,
-        safety_compliance, weather_delay, safety_incidents,
-        created_at, updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), NOW()
-      ) RETURNING *`,
-      [
-        projectId, name, description, category, lgaValue, priority, 'NOT_STARTED', 0,
-        parseFloat(budget), allocatedBudget ? parseFloat(allocatedBudget) : parseFloat(budget), 0,
-        fundingSource, new Date(startDate), new Date(expectedEndDate), beneficiaries,
-        contractorId || null, projectManagerId || null, locationJson, true, 0,
-        'Not Started', 0, 0
-      ]
-    );
-
-    const project = rowToCamelCase(result.rows[0]);
+    const project = await projectRepository.create(payload);
 
     return res.status(201).json({
       success: true,
       message: 'Project created successfully',
-      data: { project }
+      data: { project },
     });
-
   } catch (error: any) {
     console.error('Create project error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to create project'
+      message: 'Failed to create project',
     });
   }
 });
@@ -310,93 +205,46 @@ router.post('/', verifyToken, requireAdmin, async (req: Request, res: Response) 
 router.put('/:id', verifyToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const project = await projectRepository.findById(id);
 
-    // Check if project exists
-    const checkResult = await query(
-      'SELECT * FROM projects WHERE id = $1',
-      [id]
-    );
-    
-    if (checkResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found'
-      });
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
-    const project = rowToCamelCase(checkResult.rows[0]);
-
-    // Check permissions
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
+      return res.status(401).json({ success: false, message: 'Authentication required' });
     }
+
     const isAdmin = req.user.role === 'GOVERNMENT_ADMIN';
     const isProjectManager = project.projectManagerId === req.user.userId;
     const isContractor = project.contractorId && req.user.role === 'CONTRACTOR';
 
     if (!isAdmin && !isProjectManager && !isContractor) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this project'
-      });
+      return res.status(403).json({ success: false, message: 'Not authorized to update this project' });
     }
 
-    // Build update query
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    // Remove fields that shouldn't be updated
-    delete updateData.id;
-    delete updateData.createdAt;
-
-    // Convert camelCase to snake_case and build update
-    const snakeCaseData = objectToSnakeCase(updateData);
-    for (const [key, value] of Object.entries(snakeCaseData)) {
-      if (key === 'location' && value) {
-        updates.push(`location = $${paramIndex++}`);
-        values.push(JSON.stringify(value));
-      } else if (key === 'lga' && value) {
-        updates.push(`lga = $${paramIndex++}`);
-        values.push(Array.isArray(value) ? JSON.stringify(value) : value);
-      } else if (value !== undefined && value !== null) {
-        updates.push(`${key} = $${paramIndex++}`);
-        values.push(value);
+    const updates: UpdateProjectInput = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      if (value === undefined || value === null) continue;
+      if (key === 'lga') {
+        updates.lga = Array.isArray(value) ? value : [value];
+      } else if (key === 'startDate' || key === 'expectedEndDate' || key === 'actualEndDate') {
+        (updates as any)[key] = value ? new Date(value as string) : null;
+      } else {
+        (updates as any)[key] = value;
       }
     }
 
-    updates.push(`updated_at = NOW()`);
-    values.push(id);
-
-    // Update project
-    await query(
-      `UPDATE projects SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-      values
-    );
-
-    // Get updated project
-    const updatedResult = await query(
-      'SELECT * FROM projects WHERE id = $1',
-      [id]
-    );
-    const updatedProject = rowToCamelCase(updatedResult.rows[0]);
+    const updatedProject = await projectRepository.update(id, updates);
 
     return res.json({
       success: true,
       message: 'Project updated successfully',
-      data: { project: updatedProject }
+      data: { project: updatedProject },
     });
-
   } catch (error: any) {
     console.error('Update project error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update project'
-    });
+    return res.status(500).json({ success: false, message: 'Failed to update project' });
   }
 });
 
@@ -408,36 +256,17 @@ router.delete('/:id', verifyToken, requireAdmin, async (req: Request, res: Respo
   try {
     const { id } = req.params;
 
-    // Check if project exists
-    const result = await query(
-      'SELECT id FROM projects WHERE id = $1',
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found'
-      });
+    const project = await projectRepository.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
-    // Delete project (cascade will handle related records)
-    await query(
-      'DELETE FROM projects WHERE id = $1',
-      [id]
-    );
+    await projectRepository.delete(id);
 
-    return res.json({
-      success: true,
-      message: 'Project deleted successfully'
-    });
-
+    return res.json({ success: true, message: 'Project deleted successfully' });
   } catch (error: any) {
     console.error('Delete project error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to delete project'
-    });
+    return res.status(500).json({ success: false, message: 'Failed to delete project' });
   }
 });
 
@@ -452,44 +281,26 @@ router.get('/stats/overview', verifyToken, async (_req: Request, res: Response) 
 
     const stats = {
       total: projects.length,
-      byStatus: {
-        NOT_STARTED: projects.filter(p => p.status === 'NOT_STARTED').length,
-        IN_PROGRESS: projects.filter(p => p.status === 'IN_PROGRESS').length,
-        NEAR_COMPLETION: projects.filter(p => p.status === 'NEAR_COMPLETION').length,
-        COMPLETED: projects.filter(p => p.status === 'COMPLETED').length,
-        DELAYED: projects.filter(p => p.status === 'DELAYED').length,
-        ON_HOLD: projects.filter(p => p.status === 'ON_HOLD').length,
-        CANCELLED: projects.filter(p => p.status === 'CANCELLED').length,
-      },
-      byCategory: {
-        TRANSPORTATION: projects.filter(p => p.category === 'TRANSPORTATION').length,
-        HEALTHCARE: projects.filter(p => p.category === 'HEALTHCARE').length,
-        EDUCATION: projects.filter(p => p.category === 'EDUCATION').length,
-        WATER_SANITATION: projects.filter(p => p.category === 'WATER_SANITATION').length,
-        HOUSING: projects.filter(p => p.category === 'HOUSING').length,
-        AGRICULTURE: projects.filter(p => p.category === 'AGRICULTURE').length,
-        ENERGY: projects.filter(p => p.category === 'ENERGY').length,
-        ICT: projects.filter(p => p.category === 'ICT').length,
-        TOURISM: projects.filter(p => p.category === 'TOURISM').length,
-        ENVIRONMENT: projects.filter(p => p.category === 'ENVIRONMENT').length,
-      },
-      totalBudget: projects.reduce((sum, p) => sum + (p.budget || 0), 0),
-      allocatedBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget || 0), 0),
-      spentBudget: projects.reduce((sum, p) => sum + (p.spentBudget || 0), 0),
-      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length : 0
+      byStatus: Object.values(ProjectStatus).reduce((acc: any, status) => {
+        acc[status] = projects.filter((p: any) => p.status === status).length;
+        return acc;
+      }, {}),
+      byCategory: Object.values(ProjectCategory).reduce((acc: any, category) => {
+        acc[category] = projects.filter((p: any) => p.category === category).length;
+        return acc;
+      }, {}),
+      totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.budget || 0), 0),
+      allocatedBudget: projects.reduce((sum: number, p: any) => sum + Number(p.allocatedBudget || p.budget || 0), 0),
+      spentBudget: projects.reduce((sum: number, p: any) => sum + Number(p.spentBudget || 0), 0),
+      averageProgress: projects.length > 0
+        ? projects.reduce((sum: number, p: any) => sum + Number(p.progress || 0), 0) / projects.length
+        : 0,
     };
 
-    return res.json({
-      success: true,
-      data: { stats }
-    });
-
+    return res.json({ success: true, data: { stats } });
   } catch (error: any) {
     console.error('Get project stats error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to get project statistics'
-    });
+    return res.status(500).json({ success: false, message: 'Failed to get project statistics' });
   }
 });
 
@@ -504,19 +315,14 @@ router.get('/stats', verifyToken, async (_req: Request, res: Response) => {
 
     const stats = {
       total: projects.length,
-      byStatus: {
-        NOT_STARTED: projects.filter(p => p.status === 'NOT_STARTED').length,
-        IN_PROGRESS: projects.filter(p => p.status === 'IN_PROGRESS').length,
-        NEAR_COMPLETION: projects.filter(p => p.status === 'NEAR_COMPLETION').length,
-        COMPLETED: projects.filter(p => p.status === 'COMPLETED').length,
-        DELAYED: projects.filter(p => p.status === 'DELAYED').length,
-        ON_HOLD: projects.filter(p => p.status === 'ON_HOLD').length,
-        CANCELLED: projects.filter(p => p.status === 'CANCELLED').length,
-      },
-      totalBudget: projects.reduce((sum, p) => sum + (p.budget || 0), 0),
-      allocatedBudget: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget || 0), 0),
-      spentBudget: projects.reduce((sum, p) => sum + (p.spentBudget || 0), 0),
-      averageProgress: projects.length > 0 ? projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length : 0
+      byStatus: Object.values(ProjectStatus).reduce((acc: any, status) => {
+        acc[status] = projects.filter((p: any) => p.status === status).length;
+        return acc;
+      }, {}),
+      totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.budget || 0), 0),
+      allocatedBudget: projects.reduce((sum: number, p: any) => sum + Number(p.allocatedBudget || p.budget || 0), 0),
+      spentBudget: projects.reduce((sum: number, p: any) => sum + Number(p.spentBudget || 0), 0),
+      averageProgress: projects.length > 0 ? projects.reduce((sum: number, p: any) => sum + Number(p.progress || 0), 0) / projects.length : 0,
     };
 
     return res.json({ success: true, data: { stats } });

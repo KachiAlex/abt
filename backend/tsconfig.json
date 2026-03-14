@@ -30,12 +30,19 @@
     "src/server.ts",
     "src/config/index.ts",
     "src/config/firestore.ts",
+    "src/config/database.ts",
     "src/routes/auth.ts",
     "src/routes/projects.ts",
     "src/routes/contractors.ts",
     "src/routes/submissions.ts",
     "src/types/express.d.ts",
-    "src/types/firestore.ts"
+    "src/types/firestore.ts",
+    "src/types/models.ts",
+    "src/repositories/userRepository.ts",
+    "src/repositories/contractorRepository.ts",
+    "src/repositories/projectRepository.ts",
+    "src/repositories/submissionRepository.ts",
+    "src/repositories/documentRepository.ts"
   ],
   "exclude": [
     "node_modules",
@@ -52,7 +59,6 @@
     "src/routes/seed.ts",
     "src/scripts/**",
     "src/scripts",
-    "src/config/database.ts",
     "src/functions.ts",
     "src/services/fileUploadService.ts"
   ]

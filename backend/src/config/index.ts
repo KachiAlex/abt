@@ -6,7 +6,8 @@ dotenv.config();
 export const config = {
   // Server
   nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '5000', 10),
+  // PORT is reserved by Firebase Functions, use SERVER_PORT instead
+  port: parseInt(process.env.SERVER_PORT || process.env.PORT || '5000', 10),
   
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'your-super-secure-jwt-secret-key-change-in-production',

@@ -18,7 +18,8 @@
     "types": ["node"]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "backend/src/**/*"
   ],
   "exclude": [
     "node_modules",

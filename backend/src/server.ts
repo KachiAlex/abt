@@ -58,16 +58,16 @@ if (config.nodeEnv === 'development') {
 // Health check endpoint
 app.get('/health', async (_req: express.Request, res: express.Response) => {
   try {
-    // Test database connection
-    const { query } = await import('./config/database');
-    await query('SELECT NOW()');
+    // Test Firestore connection
+    const { db } = await import('./config/firestore');
+    await db.collection('_health').limit(1).get();
     
     res.json({
       success: true,
-      message: 'GPT API is running with PostgreSQL',
+      message: 'GPT API is running with Firestore',
       timestamp: new Date().toISOString(),
       environment: config.nodeEnv,
-      database: 'PostgreSQL',
+      database: 'Firestore',
     });
   } catch (error) {
     res.status(503).json({
@@ -144,7 +144,7 @@ const PORT = process.env.PORT || config.port;
 httpServer.listen(PORT, () => {
   console.log(`🚀 GPT API Server running on port ${PORT}`);
   console.log(`📱 Environment: ${config.nodeEnv}`);
-  console.log(`🗄️ Database: PostgreSQL`);
+  console.log(`🗄️ Database: Firestore`);
   console.log(`🌐 CORS Origin: ${config.corsOrigin}`);
 });
 
