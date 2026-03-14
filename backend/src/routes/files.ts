@@ -1,10 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import { fileUploadService } from '../services/fileUploadService';
-import { db, Collections } from '../config/firestore';
-import { Document, DocumentCategory } from '../types/firestore';
-import { config } from '../config';
 import jwt from 'jsonwebtoken';
+import { config } from '../config';
+import { DocumentCategory } from '../types/firestore';
+import { fileUploadService } from '../services/fileUploadService';
+import { documentRepository } from '../repositories/documentRepository';
+import { CreateDocumentInput, DbDocument } from '../types/models';
 
 const router = Router();
 
@@ -16,8 +17,18 @@ const upload = multer({
   }
 });
 
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    role?: string;
+    [key: string]: any;
+  };
+}
+
+type DocumentWithUrl = DbDocument & { downloadURL?: string };
+
 // Middleware to verify JWT token
-const verifyToken = (req: any, res: any, next: any) => {
+const verifyToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -51,11 +62,27 @@ const verifyToken = (req: any, res: any, next: any) => {
   }
 };
 
+const normalizeId = (value?: string): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+};
+
+const withSignedUrl = async (document: DbDocument): Promise<DocumentWithUrl> => {
+  try {
+    const downloadURL = await fileUploadService.getSignedUrl(document.filePath);
+    return { ...document, downloadURL };
+  } catch (error) {
+    console.error('Signed URL generation error:', error);
+    return document;
+  }
+};
+
 /**
  * POST /api/files/upload
  * Upload a single file
  */
-router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
+router.post('/upload', verifyToken, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -73,6 +100,16 @@ router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
       });
     }
 
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid user context'
+      });
+    }
+
+    const normalizedProjectId = normalizeId(projectId);
+    const normalizedSubmissionId = normalizeId(submissionId);
+
     // Validate file
     const validation = fileUploadService.validateFile(req.file, config.maxFileSize);
     if (!validation.valid) {
@@ -87,28 +124,24 @@ router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
       req.file,
       category as DocumentCategory,
       req.user.userId,
-      projectId,
-      submissionId
+      normalizedProjectId ?? undefined,
+      normalizedSubmissionId ?? undefined
     );
 
-    // Save document record to Firestore
-    const documentId = `doc-${Date.now()}`;
-    const document: Document = {
-      id: documentId,
-      projectId: projectId || null,
-      submissionId: submissionId || null,
+    const documentData: CreateDocumentInput = {
+      projectId: normalizedProjectId,
+      submissionId: normalizedSubmissionId,
       fileName: uploadResult.fileName,
       originalName: uploadResult.originalName,
       filePath: uploadResult.filePath,
       fileSize: uploadResult.fileSize,
       mimeType: uploadResult.mimeType,
-      category: category as DocumentCategory,
+      category,
       uploadedBy: req.user.userId,
       isPublic: false,
-      createdAt: new Date() as any
     };
 
-    await db.collection(Collections.DOCUMENTS).doc(documentId).set(document);
+    const document = await documentRepository.create(documentData);
 
     return res.json({
       success: true,
@@ -134,7 +167,7 @@ router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
  * POST /api/files/upload-multiple
  * Upload multiple files
  */
-router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (req, res) => {
+router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
     const { category, projectId, submissionId } = req.body;
@@ -153,8 +186,18 @@ router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (r
       });
     }
 
-    const uploadResults = [];
-    const errors = [];
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid user context'
+      });
+    }
+
+    const normalizedProjectId = normalizeId(projectId);
+    const normalizedSubmissionId = normalizeId(submissionId);
+
+    const uploadResults: DocumentWithUrl[] = [];
+    const errors: { fileName: string; error: string }[] = [];
 
     for (const file of files) {
       try {
@@ -173,28 +216,24 @@ router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (r
           file,
           category as DocumentCategory,
           req.user.userId,
-          projectId,
-          submissionId
+          normalizedProjectId ?? undefined,
+          normalizedSubmissionId ?? undefined
         );
 
-        // Save document record to Firestore
-        const documentId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const document: Document = {
-          id: documentId,
-          projectId: projectId || null,
-          submissionId: submissionId || null,
+        const documentData: CreateDocumentInput = {
+          projectId: normalizedProjectId,
+          submissionId: normalizedSubmissionId,
           fileName: uploadResult.fileName,
           originalName: uploadResult.originalName,
           filePath: uploadResult.filePath,
           fileSize: uploadResult.fileSize,
           mimeType: uploadResult.mimeType,
-          category: category as DocumentCategory,
+          category,
           uploadedBy: req.user.userId,
           isPublic: false,
-          createdAt: new Date() as any
         };
 
-        await db.collection(Collections.DOCUMENTS).doc(documentId).set(document);
+        const document = await documentRepository.create(documentData);
 
         uploadResults.push({
           ...document,
@@ -231,30 +270,27 @@ router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (r
  * GET /api/files/:id
  * Get file information
  */
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const doc = await db.collection(Collections.DOCUMENTS).doc(id).get();
-    
-    if (!doc.exists) {
+    const document = await documentRepository.findById(id);
+
+    if (!document) {
       return res.status(404).json({
         success: false,
         message: 'File not found'
       });
     }
 
-    const document = doc.data() as Document;
-
     // Generate signed URL for private access
-    const signedUrl = await fileUploadService.getSignedUrl(document.filePath);
+    const signedDocument = await withSignedUrl(document);
 
     return res.json({
       success: true,
       data: {
         document: {
-          ...document,
-          downloadURL: signedUrl
+          ...signedDocument
         }
       }
     });
@@ -272,23 +308,21 @@ router.get('/:id', verifyToken, async (req, res) => {
  * DELETE /api/files/:id
  * Delete file
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const doc = await db.collection(Collections.DOCUMENTS).doc(id).get();
-    
-    if (!doc.exists) {
+    const document = await documentRepository.findById(id);
+
+    if (!document) {
       return res.status(404).json({
         success: false,
         message: 'File not found'
       });
     }
 
-    const document = doc.data() as Document;
-
     // Check if user has permission to delete (uploader or admin)
-    if (document.uploadedBy !== req.user.userId && req.user.role !== 'GOVERNMENT_ADMIN') {
+    if (document.uploadedBy !== req.user?.userId && req.user?.role !== 'GOVERNMENT_ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this file'
@@ -298,8 +332,8 @@ router.delete('/:id', verifyToken, async (req, res) => {
     // Delete file from storage
     await fileUploadService.deleteFile(document.filePath);
 
-    // Delete document record from Firestore
-    await db.collection(Collections.DOCUMENTS).doc(id).delete();
+    // Delete document record from Postgres
+    await documentRepository.delete(id);
 
     return res.json({
       success: true,
@@ -319,35 +353,15 @@ router.delete('/:id', verifyToken, async (req, res) => {
  * GET /api/files/project/:projectId
  * Get all files for a project
  */
-router.get('/project/:projectId', verifyToken, async (req, res) => {
+router.get('/project/:projectId', verifyToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { projectId } = req.params;
     const { category } = req.query;
 
-    let query = db.collection(Collections.DOCUMENTS)
-      .where('projectId', '==', projectId);
+    const categoryFilter = Array.isArray(category) ? category[0] : (category as string | undefined);
+    const documents = await documentRepository.listByProject(projectId, categoryFilter);
 
-    if (category) {
-      query = query.where('category', '==', category);
-    }
-
-    const snapshot = await query.get();
-    const documents = snapshot.docs.map(doc => doc.data() as Document);
-
-    // Generate signed URLs for all files
-    const documentsWithUrls = await Promise.all(
-      documents.map(async (doc) => {
-        try {
-          const signedUrl = await fileUploadService.getSignedUrl(doc.filePath);
-          return {
-            ...doc,
-            downloadURL: signedUrl
-          };
-        } catch (error) {
-          return doc;
-        }
-      })
-    );
+    const documentsWithUrls = await Promise.all(documents.map(withSignedUrl));
 
     return res.json({
       success: true,
@@ -369,30 +383,13 @@ router.get('/project/:projectId', verifyToken, async (req, res) => {
  * GET /api/files/submission/:submissionId
  * Get all files for a submission
  */
-router.get('/submission/:submissionId', verifyToken, async (req, res) => {
+router.get('/submission/:submissionId', verifyToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { submissionId } = req.params;
 
-    const snapshot = await db.collection(Collections.DOCUMENTS)
-      .where('submissionId', '==', submissionId)
-      .get();
+    const documents = await documentRepository.listBySubmission(submissionId);
 
-    const documents = snapshot.docs.map(doc => doc.data() as Document);
-
-    // Generate signed URLs for all files
-    const documentsWithUrls = await Promise.all(
-      documents.map(async (doc) => {
-        try {
-          const signedUrl = await fileUploadService.getSignedUrl(doc.filePath);
-          return {
-            ...doc,
-            downloadURL: signedUrl
-          };
-        } catch (error) {
-          return doc;
-        }
-      })
-    );
+    const documentsWithUrls = await Promise.all(documents.map(withSignedUrl));
 
     return res.json({
       success: true,

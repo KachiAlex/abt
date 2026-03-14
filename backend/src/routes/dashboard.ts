@@ -1,13 +1,39 @@
-import { Router } from 'express';
-import { db, Collections } from '../config/firestore';
-import { Project, ProjectStatus, ProjectCategory, Submission, SubmissionStatus } from '../types/firestore';
-import { config } from '../config';
+import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { config } from '../config';
+import { Project, ProjectStatus, ProjectCategory, SubmissionStatus } from '../types/firestore';
+import { projectRepository } from '../repositories/projectRepository';
+import { submissionRepository } from '../repositories/submissionRepository';
+import { contractorRepository } from '../repositories/contractorRepository';
+import { DbProject } from '../types/models';
+import { query } from '../config/database';
 
 const router = Router();
 
+const mapDbProjectRow = (row: any): Project => ({
+  ...row,
+  lga: Array.isArray(row.lga) ? row.lga : row.lga ? [row.lga] : [],
+  budget: Number(row.budget ?? 0),
+  allocatedBudget: Number(row.allocated_budget ?? row.budget ?? 0),
+  spentBudget: Number(row.spent_budget ?? 0),
+  progress: Number(row.progress ?? 0),
+});
+
+const fetchAllProjects = async (): Promise<Project[]> => {
+  const projectsResult = await query('SELECT * FROM projects');
+  return projectsResult.rows.map(mapDbProjectRow);
+};
+
 // Middleware to verify JWT token
-const verifyToken = (req: any, res: any, next: any) => {
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    role?: string;
+    [key: string]: any;
+  };
+}
+
+const verifyToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -47,17 +73,13 @@ const verifyToken = (req: any, res: any, next: any) => {
  */
 router.get('/stats', verifyToken, async (_req, res) => {
   try {
-    // Get all projects
-    const projectsSnapshot = await db.collection(Collections.PROJECTS).get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
+    const projects = await fetchAllProjects();
 
-    // Get all submissions
-    const submissionsSnapshot = await db.collection(Collections.SUBMISSIONS).get();
-    const submissions = submissionsSnapshot.docs.map(doc => doc.data() as Submission);
+    const submissionsResult = await query('SELECT status FROM submissions');
+    const submissions = submissionsResult.rows as { status: SubmissionStatus }[];
 
-    // Get all contractors
-    const contractorsSnapshot = await db.collection(Collections.CONTRACTOR_PROFILES).get();
-    const contractors = contractorsSnapshot.docs.map(doc => doc.data());
+    const contractorsResult = await query('SELECT is_verified, is_certified FROM contractor_profiles');
+    const contractors = contractorsResult.rows as { is_verified: boolean; is_certified: boolean }[];
 
     // Calculate statistics
     const stats = {
@@ -122,8 +144,7 @@ router.get('/project-status-chart', verifyToken, async (req, res) => {
   try {
     const { type = 'bar' } = req.query;
 
-    const projectsSnapshot = await db.collection(Collections.PROJECTS).get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
+    const projects = await fetchAllProjects();
 
     const statusData = {
       [ProjectStatus.NOT_STARTED]: projects.filter(p => p.status === ProjectStatus.NOT_STARTED).length,
@@ -172,8 +193,7 @@ router.get('/project-status-chart', verifyToken, async (req, res) => {
  */
 router.get('/budget-analysis', verifyToken, async (_req, res) => {
   try {
-    const projectsSnapshot = await db.collection(Collections.PROJECTS).get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
+    const projects = await fetchAllProjects();
 
     const budgetAnalysis = {
       totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
@@ -220,8 +240,7 @@ router.get('/budget-analysis', verifyToken, async (_req, res) => {
  */
 router.get('/lga-performance', verifyToken, async (_req, res) => {
   try {
-    const projectsSnapshot = await db.collection(Collections.PROJECTS).get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
+    const projects = await fetchAllProjects();
 
     // Group projects by LGA (handle both string and array LGAs)
     const lgaData = projects.reduce((acc, project) => {
@@ -287,64 +306,74 @@ router.get('/lga-performance', verifyToken, async (_req, res) => {
  * GET /api/dashboard/recent-activity
  * Get recent activity feed
  */
-router.get('/recent-activity', verifyToken, async (req, res) => {
+router.get('/recent-activity', verifyToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { limit = 20 } = req.query;
     const limitNum = parseInt(limit as string);
 
-    // Get recent submissions
-    const submissionsSnapshot = await db.collection(Collections.SUBMISSIONS)
-      .orderBy('submittedAt', 'desc')
-      .limit(limitNum)
-      .get();
-    const submissions = submissionsSnapshot.docs.map(doc => doc.data() as Submission);
+    const normalizedLimit = Number.isFinite(limitNum) && limitNum > 0 ? Math.min(limitNum, 100) : 20;
 
-    // Get recent projects
-    const projectsSnapshot = await db.collection(Collections.PROJECTS)
-      .orderBy('updatedAt', 'desc')
-      .limit(limitNum)
-      .get();
-    const projects = projectsSnapshot.docs.map(doc => doc.data() as Project);
+    const [recentSubmissions, recentProjects] = await Promise.all([
+      submissionRepository.listRecentWithRelations(normalizedLimit),
+      projectRepository.listRecentUpdates(normalizedLimit),
+    ]);
 
     // Combine and format activities
     const activities = [];
 
     // Add submission activities
-    for (const submission of submissions) {
-      const projectDoc = await db.collection(Collections.PROJECTS).doc(submission.projectId).get();
-      const project = projectDoc.exists ? projectDoc.data() : null;
+    const contractorIds = Array.from(
+      new Set(
+        recentSubmissions
+          .map((submission) => submission.contractor?.id)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
 
-      const contractorDoc = await db.collection(Collections.CONTRACTOR_PROFILES).doc(submission.contractorId).get();
-      const contractor = contractorDoc.exists ? contractorDoc.data() : null;
+    const contractorSummaries = await Promise.all(
+      contractorIds.map(async (id) => {
+        const contractor = await contractorRepository.findById(id);
+        if (!contractor) return null;
+        return { id: contractor.id, companyName: contractor.companyName ?? null };
+      })
+    );
 
-      activities.push({
+    const contractorMap = contractorSummaries
+      .filter((c): c is { id: string; companyName: string | null } => c !== null)
+      .reduce<Record<string, { id: string; companyName: string | null }>>((acc, contractor) => {
+        acc[contractor.id] = contractor;
+        return acc;
+      }, {});
+
+    const submissionsActivities = recentSubmissions.map((submission) => {
+      const contractor = submission.contractor?.id ? contractorMap[submission.contractor.id] : null;
+      return {
         id: `submission-${submission.id}`,
         type: 'submission',
         title: `New ${submission.type.toLowerCase()} submission`,
         description: `${contractor?.companyName || 'Contractor'} submitted: ${submission.title}`,
-        project: project ? { id: project.id, name: project.name } : null,
+        project: submission.project ? { id: submission.project.id, name: submission.project.name || '' } : null,
         timestamp: submission.submittedAt,
-        status: submission.status
-      });
-    }
+        status: submission.status,
+      };
+    });
 
     // Add project activities
-    for (const project of projects) {
-      activities.push({
-        id: `project-${project.id}`,
-        type: 'project',
-        title: 'Project updated',
-        description: `${project.name} - Status: ${project.status}`,
-        project: { id: project.id, name: project.name },
-        timestamp: project.updatedAt,
-        status: project.status
-      });
-    }
+    const projectActivities = recentProjects.map((project: DbProject) => ({
+      id: `project-${project.id}`,
+      type: 'project',
+      title: 'Project updated',
+      description: `${project.name} - Status: ${project.status}`,
+      project: { id: project.id, name: project.name },
+      timestamp: project.updatedAt,
+      status: project.status,
+    }));
 
     // Sort by timestamp and limit
-    const toMs = (t: any) => (typeof t?.toMillis === 'function' ? t.toMillis() : new Date(t).getTime());
+    const activities = [...submissionsActivities, ...projectActivities];
+    const toMs = (t: any) => (t instanceof Date ? t.getTime() : new Date(t).getTime());
     activities.sort((a, b) => toMs(b.timestamp) - toMs(a.timestamp));
-    const recentActivities = activities.slice(0, limitNum);
+    const recentActivities = activities.slice(0, normalizedLimit);
 
     return res.json({
       success: true,
