@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { Project, ProjectStatus, ProjectCategory, SubmissionStatus } from '../types/firestore';
+import { ProjectStatus, ProjectCategory, SubmissionStatus } from '../types/domain';
 import { projectRepository } from '../repositories/projectRepository';
 import { submissionRepository } from '../repositories/submissionRepository';
 import { contractorRepository } from '../repositories/contractorRepository';
@@ -10,60 +10,111 @@ import { query } from '../config/database';
 
 const router = Router();
 
-const mapDbProjectRow = (row: any): Project => ({
-  ...row,
+interface DashboardProject {
+  id: string;
+  name: string;
+  description?: string | null;
+  category: string;
+  lga: string[];
+  priority: string;
+  status: string;
+  progress: number;
+  budget: number;
+  allocatedBudget: number;
+  spentBudget: number;
+  fundingSource?: string | null;
+  startDate?: Date | null;
+  expectedEndDate?: Date | null;
+  actualEndDate?: Date | null;
+  beneficiaries?: string | null;
+  contractorId?: string | null;
+  projectManagerId?: string | null;
+  location?: any;
+  isPublic: boolean;
+  qualityScore: number;
+  safetyCompliance?: string | null;
+  weatherDelay: number;
+  safetyIncidents: number;
+}
+
+const mapDbProjectRow = (row: any): DashboardProject => ({
+  id: row.id,
+  name: row.name,
+  description: row.description ?? null,
+  category: row.category,
   lga: Array.isArray(row.lga) ? row.lga : row.lga ? [row.lga] : [],
+  priority: row.priority,
+  status: row.status,
+  progress: Number(row.progress ?? 0),
   budget: Number(row.budget ?? 0),
   allocatedBudget: Number(row.allocated_budget ?? row.budget ?? 0),
   spentBudget: Number(row.spent_budget ?? 0),
-  progress: Number(row.progress ?? 0),
+  fundingSource: row.funding_source ?? null,
+  startDate: row.start_date ? new Date(row.start_date) : null,
+  expectedEndDate: row.expected_end_date ? new Date(row.expected_end_date) : null,
+  actualEndDate: row.actual_end_date ? new Date(row.actual_end_date) : null,
+  beneficiaries: row.beneficiaries ?? null,
+  contractorId: row.contractor_id ?? null,
+  projectManagerId: row.project_manager_id ?? null,
+  location: row.location ?? null,
+  isPublic: Boolean(row.is_public),
+  qualityScore: Number(row.quality_score ?? 0),
+  safetyCompliance: row.safety_compliance ?? null,
+  weatherDelay: Number(row.weather_delay ?? 0),
+  safetyIncidents: Number(row.safety_incidents ?? 0),
 });
 
-const fetchAllProjects = async (): Promise<Project[]> => {
+const fetchAllProjects = async (): Promise<DashboardProject[]> => {
   const projectsResult = await query('SELECT * FROM projects');
   return projectsResult.rows.map(mapDbProjectRow);
 };
 
 // Middleware to verify JWT token
-interface AuthenticatedRequest extends Request {
+type AuthedRequest = Request & {
   user?: {
     userId: string;
-    role?: string;
+    email: string;
+    role: string;
     [key: string]: any;
   };
-}
+};
 
-const verifyToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const verifyToken = (req: AuthedRequest, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Authorization token required'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, config.jwtSecret) as any;
+    const decoded = jwt.verify(token, config.jwtSecret) as AuthedRequest['user'];
     req.user = decoded;
     next();
+    return;
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid token'
       });
+      return;
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Token expired'
       });
+      return;
     }
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
+    return;
   }
 };
 
@@ -112,8 +163,8 @@ router.get('/stats', verifyToken, async (_req, res) => {
       },
       contractors: {
         total: contractors.length,
-        verified: contractors.filter(c => c.isVerified).length,
-        certified: contractors.filter(c => c.isCertified).length
+        verified: contractors.filter(c => c.is_verified).length,
+        certified: contractors.filter(c => c.is_certified).length
       },
       budget: {
         totalAllocated: projects.reduce((sum, p) => sum + (p.allocatedBudget || p.budget), 0),
@@ -306,7 +357,7 @@ router.get('/lga-performance', verifyToken, async (_req, res) => {
  * GET /api/dashboard/recent-activity
  * Get recent activity feed
  */
-router.get('/recent-activity', verifyToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/recent-activity', verifyToken, async (req: AuthedRequest, res: Response) => {
   try {
     const { limit = 20 } = req.query;
     const limitNum = parseInt(limit as string);
@@ -318,8 +369,15 @@ router.get('/recent-activity', verifyToken, async (req: AuthenticatedRequest, re
       projectRepository.listRecentUpdates(normalizedLimit),
     ]);
 
-    // Combine and format activities
-    const activities = [];
+    type Activity = {
+      id: string;
+      type: 'submission' | 'project';
+      title: string;
+      description: string;
+      project: { id: string; name: string } | null;
+      timestamp: Date | string;
+      status: string;
+    };
 
     // Add submission activities
     const contractorIds = Array.from(
@@ -330,22 +388,26 @@ router.get('/recent-activity', verifyToken, async (req: AuthenticatedRequest, re
       )
     );
 
-    const contractorSummaries = await Promise.all(
-      contractorIds.map(async (id) => {
-        const contractor = await contractorRepository.findById(id);
-        if (!contractor) return null;
-        return { id: contractor.id, companyName: contractor.companyName ?? null };
-      })
-    );
+    type ContractorSummary = { id: string; companyName: string | null };
+    const contractorSummaries: ContractorSummary[] = (
+      await Promise.all(
+        contractorIds.map(async (id) => {
+          const contractor = await contractorRepository.findById(id);
+          if (!contractor) return null;
+          return { id: contractor.id, companyName: contractor.companyName ?? null } as ContractorSummary;
+        })
+      )
+    ).filter((c): c is ContractorSummary => Boolean(c));
 
-    const contractorMap = contractorSummaries
-      .filter((c): c is { id: string; companyName: string | null } => c !== null)
-      .reduce<Record<string, { id: string; companyName: string | null }>>((acc, contractor) => {
+    const contractorMap = contractorSummaries.reduce<Record<string, ContractorSummary>>(
+      (acc, contractor) => {
         acc[contractor.id] = contractor;
         return acc;
-      }, {});
+      },
+      {}
+    );
 
-    const submissionsActivities = recentSubmissions.map((submission) => {
+    const submissionsActivities: Activity[] = recentSubmissions.map((submission) => {
       const contractor = submission.contractor?.id ? contractorMap[submission.contractor.id] : null;
       return {
         id: `submission-${submission.id}`,
@@ -359,7 +421,7 @@ router.get('/recent-activity', verifyToken, async (req: AuthenticatedRequest, re
     });
 
     // Add project activities
-    const projectActivities = recentProjects.map((project: DbProject) => ({
+    const projectActivities: Activity[] = recentProjects.map((project: DbProject) => ({
       id: `project-${project.id}`,
       type: 'project',
       title: 'Project updated',
@@ -370,8 +432,9 @@ router.get('/recent-activity', verifyToken, async (req: AuthenticatedRequest, re
     }));
 
     // Sort by timestamp and limit
-    const activities = [...submissionsActivities, ...projectActivities];
-    const toMs = (t: any) => (t instanceof Date ? t.getTime() : new Date(t).getTime());
+    const activities: Activity[] = [...submissionsActivities, ...projectActivities];
+    const toMs = (value: Date | string): number =>
+      value instanceof Date ? value.getTime() : new Date(value).getTime();
     activities.sort((a, b) => toMs(b.timestamp) - toMs(a.timestamp));
     const recentActivities = activities.slice(0, normalizedLimit);
 

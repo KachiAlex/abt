@@ -1,23 +1,31 @@
-import { fileUploadService } from '../../../services/fileUploadService';
-import { storage } from '../../../config/firestore';
-
-// Mock Firebase Storage
-jest.mock('../../../config/firestore', () => ({
-  storage: {
-    bucket: jest.fn(() => ({
-      file: jest.fn(() => ({
-        createWriteStream: jest.fn(() => ({
-          on: jest.fn(),
-          end: jest.fn()
-        })),
-        makePublic: jest.fn(),
-        delete: jest.fn(),
-        getMetadata: jest.fn(),
-        getSignedUrl: jest.fn()
-      }))
-    }))
-  }
+jest.mock('../../../config', () => ({
+  config: {
+    cloudinary: {
+      url: 'cloudinary://key:secret@test',
+      folderPrefix: 'test',
+    },
+  },
 }));
+
+jest.mock('cloudinary', () => ({
+  __esModule: true,
+  v2: {
+    config: jest.fn(),
+    uploader: {
+      upload_stream: jest.fn(),
+      destroy: jest.fn(),
+    },
+    api: {
+      resource: jest.fn(),
+    },
+    utils: {
+      sign_url: jest.fn(),
+    },
+  },
+}));
+
+import { v2 as cloudinary } from 'cloudinary';
+import { fileUploadService } from '../../../services/fileUploadService';
 
 describe('FileUploadService', () => {
   const mockFile = {
@@ -63,21 +71,15 @@ describe('FileUploadService', () => {
 
   describe('uploadFile', () => {
     it('should upload file successfully', async () => {
-      const mockBucket = {
-        file: jest.fn(() => ({
-          createWriteStream: jest.fn(() => ({
-            on: jest.fn((event, callback) => {
-              if (event === 'finish') {
-                setTimeout(callback, 0);
-              }
-            }),
-            end: jest.fn(() => {})
-          })),
-          makePublic: jest.fn().mockResolvedValue({})
-        }))
-      } as any;
-
-      (storage.bucket as jest.Mock).mockReturnValue(mockBucket);
+      const uploadStreamMock = cloudinary.uploader.upload_stream as jest.Mock;
+      uploadStreamMock.mockImplementation((_options, callback) => {
+        setTimeout(() => callback(null, {
+          public_id: 'test/documents/p1/file',
+          secure_url: 'https://cloudinary.com/file.pdf',
+          url: 'http://cloudinary.com/file.pdf'
+        }), 0);
+        return { end: jest.fn() };
+      });
 
       const result = await fileUploadService.uploadFile(
         mockFile,
@@ -86,28 +88,19 @@ describe('FileUploadService', () => {
         'project-123'
       );
 
-      expect(result.fileName).toMatch(/^[a-f0-9-]+\.pdf$/);
       expect(result.originalName).toBe('test-document.pdf');
-      expect(result.fileSize).toBe(1024000);
-      expect(result.mimeType).toBe('application/pdf');
-      expect(result.downloadURL).toContain('storage.googleapis.com');
+      expect(result.fileSize).toBe(mockFile.size);
+      expect(result.mimeType).toBe(mockFile.mimetype);
+      expect(result.downloadURL).toBe('https://cloudinary.com/file.pdf');
+      expect(uploadStreamMock).toHaveBeenCalled();
     });
 
     it('should handle upload error', async () => {
-      const mockBucket = {
-        file: jest.fn(() => ({
-          createWriteStream: jest.fn(() => ({
-            on: jest.fn((event, callback) => {
-              if (event === 'error') {
-                setTimeout(() => callback(new Error('Upload failed')), 0);
-              }
-            }),
-            end: jest.fn(() => {})
-          }))
-        }))
-      } as any;
-
-      (storage.bucket as jest.Mock).mockReturnValue(mockBucket);
+      const uploadStreamMock = cloudinary.uploader.upload_stream as jest.Mock;
+      uploadStreamMock.mockImplementation((_options, callback) => {
+        setTimeout(() => callback(new Error('Upload failed')), 0);
+        return { end: jest.fn() };
+      });
 
       await expect(
         fileUploadService.uploadFile(
@@ -121,27 +114,18 @@ describe('FileUploadService', () => {
 
   describe('deleteFile', () => {
     it('should delete file successfully', async () => {
-      const mockBucket = {
-        file: jest.fn(() => ({
-          delete: jest.fn().mockResolvedValue({})
-        }))
-      } as any;
-
-      (storage.bucket as jest.Mock).mockReturnValue(mockBucket);
+      const destroyMock = cloudinary.uploader.destroy as jest.Mock;
+      destroyMock.mockResolvedValue({});
 
       await expect(
         fileUploadService.deleteFile('documents/test-file.pdf')
       ).resolves.not.toThrow();
+      expect(destroyMock).toHaveBeenCalledWith('documents/test-file.pdf', expect.any(Object));
     });
 
     it('should handle delete error', async () => {
-      const mockBucket = {
-        file: jest.fn(() => ({
-          delete: jest.fn().mockRejectedValue(new Error('Delete failed'))
-        }))
-      };
-
-      (storage.bucket as jest.Mock).mockReturnValue(mockBucket);
+      const destroyMock = cloudinary.uploader.destroy as jest.Mock;
+      destroyMock.mockRejectedValue(new Error('Delete failed'));
 
       await expect(
         fileUploadService.deleteFile('documents/test-file.pdf')
@@ -151,30 +135,39 @@ describe('FileUploadService', () => {
 
   describe('getSignedUrl', () => {
     it('should generate signed URL successfully', async () => {
-      const mockBucket = {
-        file: jest.fn(() => ({
-          getSignedUrl: jest.fn().mockResolvedValue(['https://signed-url.com'])
-        }))
-      } as any;
-
-      (storage.bucket as jest.Mock).mockReturnValue(mockBucket);
+      const signUrlMock = (cloudinary.utils as any).sign_url as jest.Mock;
+      signUrlMock.mockReturnValue('https://signed-url.com');
 
       const result = await fileUploadService.getSignedUrl('documents/test-file.pdf');
       expect(result).toBe('https://signed-url.com');
     });
 
     it('should handle signed URL generation error', async () => {
-      const mockBucket = {
-        file: jest.fn(() => ({
-          getSignedUrl: jest.fn().mockRejectedValue(new Error('URL generation failed'))
-        }))
-      } as any;
-
-      (storage.bucket as jest.Mock).mockReturnValue(mockBucket);
+      const signUrlMock = (cloudinary.utils as any).sign_url as jest.Mock;
+      signUrlMock.mockImplementation(() => { throw new Error('URL generation failed'); });
 
       await expect(
         fileUploadService.getSignedUrl('documents/test-file.pdf')
       ).rejects.toThrow('Failed to generate signed URL');
+    });
+  });
+
+  describe('getFileMetadata', () => {
+    it('should return file metadata', async () => {
+      const resourceMock = cloudinary.api.resource as jest.Mock;
+      resourceMock.mockResolvedValue({ id: 'resource-123' });
+
+      const result = await fileUploadService.getFileMetadata('documents/test-file.pdf');
+      expect(result).toEqual({ id: 'resource-123' });
+    });
+
+    it('should handle metadata errors', async () => {
+      const resourceMock = cloudinary.api.resource as jest.Mock;
+      resourceMock.mockRejectedValue(new Error('metadata failed'));
+
+      await expect(
+        fileUploadService.getFileMetadata('documents/test-file.pdf')
+      ).rejects.toThrow('Failed to get file metadata');
     });
   });
 });

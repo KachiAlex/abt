@@ -1,34 +1,23 @@
 import request from 'supertest';
 import express from 'express';
 import authRoutes from '../../../routes/auth';
-import { db } from '../../../config/firestore';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import userRepository from '../../../repositories/userRepository';
 
-// Mock the database
-jest.mock('../../../config/firestore', () => {
-const chain: any = {
-  where: jest.fn((): any => chain),
-  limit: jest.fn((): any => ({ get: jest.fn() })),
-  get: jest.fn()
-};
-	return {
-		db: {
-			collection: jest.fn(() => ({
-				where: chain.where,
-				limit: chain.limit,
-				get: chain.get,
-				doc: jest.fn(() => ({
-					get: jest.fn(),
-					update: jest.fn()
-				}))
-			}))
-		},
-		Collections: {
-			USERS: 'users'
-		}
-	};
-});
+jest.mock('../../../repositories/userRepository', () => ({
+	__esModule: true,
+	default: {
+		findByEmail: jest.fn(),
+		findById: jest.fn(),
+		updateLastLogin: jest.fn(),
+		create: jest.fn(),
+		update: jest.fn(),
+		updatePassword: jest.fn(),
+	}
+}));
+
+const mockedRepo = userRepository as jest.Mocked<typeof userRepository>;
 
 const app = express();
 app.use(express.json());
@@ -53,20 +42,7 @@ describe('Auth Routes', () => {
         updatedAt: new Date()
       };
 
-      const mockQuerySnapshot = {
-        empty: false,
-        docs: [{
-          data: () => mockUser
-        }]
-      };
-
-      (db.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue(mockQuerySnapshot)
-          })
-        })
-      });
+      mockedRepo.findByEmail.mockResolvedValue(mockUser as any);
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -82,18 +58,7 @@ describe('Auth Routes', () => {
     });
 
     it('should return 401 for invalid credentials', async () => {
-      const mockQuerySnapshot = {
-        empty: true,
-        docs: []
-      };
-
-      (db.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue(mockQuerySnapshot)
-          })
-        })
-      });
+      mockedRepo.findByEmail.mockResolvedValue(null as any);
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -137,14 +102,7 @@ describe('Auth Routes', () => {
         'test-secret-key'
       );
 
-      (db.collection as jest.Mock).mockReturnValue({
-        doc: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            exists: true,
-            data: () => mockUser
-          })
-        })
-      });
+      mockedRepo.findById.mockResolvedValue(mockUser as any);
 
       const response = await request(app)
         .get('/api/auth/profile')
@@ -175,21 +133,15 @@ describe('Auth Routes', () => {
 
   describe('POST /api/auth/register', () => {
     it('should register new user successfully', async () => {
-      const mockQuerySnapshot = {
-        empty: true,
-        docs: []
-      };
-
-      (db.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue(mockQuerySnapshot)
-          })
-        }),
-        doc: jest.fn().mockReturnValue({
-          set: jest.fn().mockResolvedValue({})
-        })
-      });
+      mockedRepo.findByEmail.mockResolvedValue(null as any);
+      mockedRepo.create.mockResolvedValue({
+        id: 'new-user',
+        email: 'newuser@example.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        role: 'CONTRACTOR',
+        isActive: true,
+      } as any);
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -207,20 +159,7 @@ describe('Auth Routes', () => {
     });
 
     it('should return 409 for existing email', async () => {
-      const mockQuerySnapshot = {
-        empty: false,
-        docs: [{
-          data: () => ({ email: 'existing@example.com' })
-        }]
-      };
-
-      (db.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue(mockQuerySnapshot)
-          })
-        })
-      });
+      mockedRepo.findByEmail.mockResolvedValue({ email: 'existing@example.com' } as any);
 
       const response = await request(app)
         .post('/api/auth/register')

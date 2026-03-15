@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { DocumentCategory } from '../types/firestore';
+import { DocumentCategory } from '../types/domain';
 import { fileUploadService } from '../services/fileUploadService';
 import { documentRepository } from '../repositories/documentRepository';
 import { CreateDocumentInput, DbDocument } from '../types/models';
@@ -17,48 +17,56 @@ const upload = multer({
   }
 });
 
+type AuthenticatedUser = {
+  userId: string;
+  email: string;
+  role: string;
+  [key: string]: any;
+};
+
 interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: string;
-    role?: string;
-    [key: string]: any;
-  };
+  user?: AuthenticatedUser;
 }
 
 type DocumentWithUrl = DbDocument & { downloadURL?: string };
 
 // Middleware to verify JWT token
-const verifyToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const verifyToken = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Authorization token required'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, config.jwtSecret) as any;
+    const decoded = jwt.verify(token, config.jwtSecret) as AuthenticatedUser;
     req.user = decoded;
     next();
+    return;
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid token'
       });
+      return;
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Token expired'
       });
+      return;
     }
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
+    return;
   }
 };
 
@@ -66,6 +74,15 @@ const normalizeId = (value?: string): string | null => {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
+};
+
+const getFirstString = (value: unknown): string | undefined => {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    const first = value[0];
+    return typeof first === 'string' ? first : undefined;
+  }
+  return undefined;
 };
 
 const withSignedUrl = async (document: DbDocument): Promise<DocumentWithUrl> => {
@@ -115,7 +132,7 @@ router.post('/upload', verifyToken, upload.single('file'), async (req: Authentic
     if (!validation.valid) {
       return res.status(400).json({
         success: false,
-        message: validation.error
+        message: validation.error ?? 'Invalid file upload'
       });
     }
 
@@ -206,7 +223,7 @@ router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (r
         if (!validation.valid) {
           errors.push({
             fileName: file.originalname,
-            error: validation.error
+            error: validation.error ?? 'Invalid file upload'
           });
           continue;
         }
@@ -243,7 +260,7 @@ router.post('/upload-multiple', verifyToken, upload.array('files', 10), async (r
       } catch (error: any) {
         errors.push({
           fileName: file.originalname,
-          error: error.message
+          error: error?.message ?? 'Unknown upload error'
         });
       }
     }
@@ -358,7 +375,7 @@ router.get('/project/:projectId', verifyToken, async (req: AuthenticatedRequest,
     const { projectId } = req.params;
     const { category } = req.query;
 
-    const categoryFilter = Array.isArray(category) ? category[0] : (category as string | undefined);
+    const categoryFilter = getFirstString(category);
     const documents = await documentRepository.listByProject(projectId, categoryFilter);
 
     const documentsWithUrls = await Promise.all(documents.map(withSignedUrl));

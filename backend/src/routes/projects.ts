@@ -8,7 +8,7 @@ import {
   ListProjectsParams,
   UpdateProjectInput,
 } from '../types/models';
-import { ProjectCategory, ProjectStatus } from '../types/firestore';
+import { ProjectCategory, ProjectStatus } from '../types/domain';
 import { query, rowToCamelCase } from '../config/database';
 
 const router = Router();
@@ -108,6 +108,68 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
       success: false,
       message: 'Failed to get projects',
     });
+  }
+});
+
+/**
+ * GET /api/projects/stats
+ * Alias to stats overview for frontend compatibility
+ */
+router.get('/stats', verifyToken, async (_req: Request, res: Response) => {
+  try {
+    const result = await query('SELECT * FROM projects');
+    const projects = result.rows.map(rowToCamelCase);
+
+    const stats = {
+      total: projects.length,
+      byStatus: Object.values(ProjectStatus).reduce((acc: any, status) => {
+        acc[status] = projects.filter((p: any) => p.status === status).length;
+        return acc;
+      }, {}),
+      totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.budget || 0), 0),
+      allocatedBudget: projects.reduce((sum: number, p: any) => sum + Number(p.allocatedBudget || p.budget || 0), 0),
+      spentBudget: projects.reduce((sum: number, p: any) => sum + Number(p.spentBudget || 0), 0),
+      averageProgress: projects.length > 0 ? projects.reduce((sum: number, p: any) => sum + Number(p.progress || 0), 0) / projects.length : 0,
+    };
+
+    return res.json({ success: true, data: { stats } });
+  } catch (error: any) {
+    console.error('Get project stats error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get project statistics' });
+  }
+});
+
+/**
+ * GET /api/projects/stats
+ * Get project statistics
+ */
+router.get('/stats/overview', verifyToken, async (_req: Request, res: Response) => {
+  try {
+    const result = await query('SELECT * FROM projects');
+    const projects = result.rows.map(rowToCamelCase);
+
+    const stats = {
+      total: projects.length,
+      byStatus: Object.values(ProjectStatus).reduce((acc: any, status) => {
+        acc[status] = projects.filter((p: any) => p.status === status).length;
+        return acc;
+      }, {}),
+      byCategory: Object.values(ProjectCategory).reduce((acc: any, category) => {
+        acc[category] = projects.filter((p: any) => p.category === category).length;
+        return acc;
+      }, {}),
+      totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.budget || 0), 0),
+      allocatedBudget: projects.reduce((sum: number, p: any) => sum + Number(p.allocatedBudget || p.budget || 0), 0),
+      spentBudget: projects.reduce((sum: number, p: any) => sum + Number(p.spentBudget || 0), 0),
+      averageProgress: projects.length > 0
+        ? projects.reduce((sum: number, p: any) => sum + Number(p.progress || 0), 0) / projects.length
+        : 0,
+    };
+
+    return res.json({ success: true, data: { stats } });
+  } catch (error: any) {
+    console.error('Get project stats error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get project statistics' });
   }
 });
 
@@ -267,68 +329,6 @@ router.delete('/:id', verifyToken, requireAdmin, async (req: Request, res: Respo
   } catch (error: any) {
     console.error('Delete project error:', error);
     return res.status(500).json({ success: false, message: 'Failed to delete project' });
-  }
-});
-
-/**
- * GET /api/projects/stats
- * Get project statistics
- */
-router.get('/stats/overview', verifyToken, async (_req: Request, res: Response) => {
-  try {
-    const result = await query('SELECT * FROM projects');
-    const projects = result.rows.map(rowToCamelCase);
-
-    const stats = {
-      total: projects.length,
-      byStatus: Object.values(ProjectStatus).reduce((acc: any, status) => {
-        acc[status] = projects.filter((p: any) => p.status === status).length;
-        return acc;
-      }, {}),
-      byCategory: Object.values(ProjectCategory).reduce((acc: any, category) => {
-        acc[category] = projects.filter((p: any) => p.category === category).length;
-        return acc;
-      }, {}),
-      totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.budget || 0), 0),
-      allocatedBudget: projects.reduce((sum: number, p: any) => sum + Number(p.allocatedBudget || p.budget || 0), 0),
-      spentBudget: projects.reduce((sum: number, p: any) => sum + Number(p.spentBudget || 0), 0),
-      averageProgress: projects.length > 0
-        ? projects.reduce((sum: number, p: any) => sum + Number(p.progress || 0), 0) / projects.length
-        : 0,
-    };
-
-    return res.json({ success: true, data: { stats } });
-  } catch (error: any) {
-    console.error('Get project stats error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to get project statistics' });
-  }
-});
-
-/**
- * GET /api/projects/stats
- * Alias to stats overview for frontend compatibility
- */
-router.get('/stats', verifyToken, async (_req: Request, res: Response) => {
-  try {
-    const result = await query('SELECT * FROM projects');
-    const projects = result.rows.map(rowToCamelCase);
-
-    const stats = {
-      total: projects.length,
-      byStatus: Object.values(ProjectStatus).reduce((acc: any, status) => {
-        acc[status] = projects.filter((p: any) => p.status === status).length;
-        return acc;
-      }, {}),
-      totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.budget || 0), 0),
-      allocatedBudget: projects.reduce((sum: number, p: any) => sum + Number(p.allocatedBudget || p.budget || 0), 0),
-      spentBudget: projects.reduce((sum: number, p: any) => sum + Number(p.spentBudget || 0), 0),
-      averageProgress: projects.length > 0 ? projects.reduce((sum: number, p: any) => sum + Number(p.progress || 0), 0) / projects.length : 0,
-    };
-
-    return res.json({ success: true, data: { stats } });
-  } catch (error: any) {
-    console.error('Get project stats error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to get project statistics' });
   }
 });
 

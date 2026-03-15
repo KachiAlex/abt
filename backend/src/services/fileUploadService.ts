@@ -1,32 +1,43 @@
-import { storage } from '../config/firestore';
-import { DocumentCategory } from '../types/firestore';
+import { v2 as cloudinary } from 'cloudinary';
+import { DocumentCategory } from '../types/domain';
+import { config } from '../config';
+
+const configureCloudinary = (): boolean => {
+  try {
+    if (config.cloudinary.url) {
+      cloudinary.config({ secure: true, cloudinary_url: config.cloudinary.url });
+      return true;
+    }
+
+    if (config.cloudinary.cloudName && config.cloudinary.apiKey && config.cloudinary.apiSecret) {
+      cloudinary.config({
+        secure: true,
+        cloud_name: config.cloudinary.cloudName,
+        api_key: config.cloudinary.apiKey,
+        api_secret: config.cloudinary.apiSecret,
+      });
+      return true;
+    }
+  } catch (error) {
+    console.error('Cloudinary configuration error:', error);
+  }
+
+  console.warn('Cloudinary credentials are not fully configured. File uploads will fail.');
+  return false;
+};
+
+const cloudinaryConfigured = configureCloudinary();
 
 export interface UploadResult {
   fileName: string;
   originalName: string;
-  filePath: string;
+  filePath: string; // Cloudinary public_id
   fileSize: number;
   mimeType: string;
   downloadURL: string;
 }
 
 export class FileUploadService {
-  private getBucket() {
-    if (storage && typeof (storage as any).bucket === 'function') {
-      return (storage as any).bucket();
-    }
-    // Minimal stub for tests if storage is not available
-    return {
-      file: (_path: string) => ({
-        createWriteStream: () => ({ on: () => {}, end: () => {} }),
-        makePublic: async () => {},
-        delete: async () => {},
-        getMetadata: async () => [{}],
-        getSignedUrl: async () => ['']
-      })
-    };
-  }
-
   private generateId(): string {
     try {
       // @ts-ignore
@@ -38,8 +49,42 @@ export class FileUploadService {
     return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
+  private ensureConfigured() {
+    if (!cloudinaryConfigured) {
+      throw new Error('Cloudinary is not configured');
+    }
+  }
+
+  private sanitizeSegment(segment: string): string {
+    return segment
+      .toString()
+      .trim()
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase();
+  }
+
+  private buildFolder(
+    category: DocumentCategory,
+    projectId?: string,
+    submissionId?: string
+  ): string {
+    const parts = [config.cloudinary.folderPrefix || 'abt', 'documents', category.toLowerCase()];
+
+    if (projectId) {
+      parts.push('projects', this.sanitizeSegment(projectId));
+    }
+
+    if (submissionId) {
+      parts.push('submissions', this.sanitizeSegment(submissionId));
+    }
+
+    return parts.join('/');
+  }
+
   /**
-   * Upload file to Firebase Storage
+   * Upload file to Cloudinary
    */
   async uploadFile(
     file: Express.Multer.File,
@@ -49,66 +94,50 @@ export class FileUploadService {
     submissionId?: string
   ): Promise<UploadResult> {
     try {
+      this.ensureConfigured();
+
       // Generate unique filename
-      const fileExtension = file.originalname.split('.').pop();
-      const fileName = `${this.generateId()}.${fileExtension}`;
+      const originalExtension = file.originalname.includes('.')
+        ? `.${file.originalname.split('.').pop()}`
+        : '';
+      const fileName = `${this.generateId()}${originalExtension}`;
       
-      // Create file path based on category and context
-      let filePath = `documents/${category.toLowerCase()}`;
-      if (projectId) {
-        filePath += `/projects/${projectId}`;
-      }
-      if (submissionId) {
-        filePath += `/submissions/${submissionId}`;
-      }
-      filePath += `/${fileName}`;
+      const folder = this.buildFolder(category, projectId, submissionId);
+      const publicId = `${folder}/${this.sanitizeSegment(fileName.replace('.', '-'))}`;
 
-      // Upload file to Firebase Storage
-      const fileUpload = this.getBucket().file(filePath);
-      
-      const stream = fileUpload.createWriteStream({
-        metadata: {
-          contentType: file.mimetype,
-          metadata: {
-            originalName: file.originalname,
-            uploadedBy,
-            category,
-            projectId: projectId || '',
-            submissionId: submissionId || '',
-            uploadedAt: new Date().toISOString()
-          }
-        }
-      });
-
-      return new Promise((resolve, reject) => {
-        stream.on('error', (error: any) => {
-          console.error('File upload error:', error);
-          reject(new Error('Failed to upload file'));
-        });
-
-        stream.on('finish', async () => {
-          try {
-            // Make file publicly accessible
-            await fileUpload.makePublic();
-            
-            // Get download URL
-            const downloadURL = `https://storage.googleapis.com/${(fileUpload as any).bucket.name}/${filePath}`;
+      return await new Promise<UploadResult>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            public_id: publicId,
+            resource_type: 'auto',
+            overwrite: true,
+            context: {
+              original_name: file.originalname,
+              uploaded_by: uploadedBy,
+              category,
+              project_id: projectId || '',
+              submission_id: submissionId || '',
+            },
+          },
+          (error, result) => {
+            if (error || !result) {
+              console.error('Cloudinary upload error:', error);
+              reject(new Error('Failed to upload file'));
+              return;
+            }
 
             resolve({
               fileName,
               originalName: file.originalname,
-              filePath,
+              filePath: result.public_id,
               fileSize: file.size,
               mimeType: file.mimetype,
-              downloadURL
+              downloadURL: result.secure_url || result.url,
             });
-          } catch (error) {
-            console.error('Error making file public:', error);
-            reject(new Error('Failed to make file public'));
           }
-        });
+        );
 
-        stream.end(file.buffer);
+        uploadStream.end(file.buffer);
       });
 
     } catch (error) {
@@ -118,12 +147,15 @@ export class FileUploadService {
   }
 
   /**
-   * Delete file from Firebase Storage
+   * Delete file from Cloudinary
    */
   async deleteFile(filePath: string): Promise<void> {
     try {
-      const file = this.getBucket().file(filePath);
-      await file.delete();
+      this.ensureConfigured();
+      await cloudinary.uploader.destroy(filePath, {
+        invalidate: true,
+        resource_type: 'auto',
+      });
     } catch (error) {
       console.error('File deletion error:', error);
       throw new Error('Failed to delete file');
@@ -135,9 +167,11 @@ export class FileUploadService {
    */
   async getFileMetadata(filePath: string) {
     try {
-      const file = this.getBucket().file(filePath);
-      const [metadata] = await file.getMetadata();
-      return metadata;
+      this.ensureConfigured();
+      const resource = await cloudinary.api.resource(filePath, {
+        resource_type: 'auto',
+      });
+      return resource;
     } catch (error) {
       console.error('Get file metadata error:', error);
       throw new Error('Failed to get file metadata');
@@ -149,12 +183,17 @@ export class FileUploadService {
    */
   async getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
     try {
-      const file = this.getBucket().file(filePath);
-      const [signedUrl] = await file.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + expiresIn * 1000
+      this.ensureConfigured();
+      const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+      const signUrl = (cloudinary.utils as any).sign_url || ((cloudinary.utils as any).private_download_url ?? null);
+      if (typeof signUrl !== 'function') {
+        throw new Error('Cloudinary signed URL utility is unavailable');
+      }
+      return signUrl(filePath, {
+        secure: true,
+        resource_type: 'auto',
+        expires_at: expiresAt,
       });
-      return signedUrl;
     } catch (error) {
       console.error('Generate signed URL error:', error);
       throw new Error('Failed to generate signed URL');

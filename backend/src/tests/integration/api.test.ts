@@ -1,40 +1,49 @@
 import request from 'supertest';
-import { app } from '../../functions';
-import { db } from '../../config/firestore';
+import app from '../../server';
 import bcrypt from 'bcryptjs';
+import userRepository from '../../repositories/userRepository';
+import { projectRepository } from '../../repositories/projectRepository';
+import { contractorRepository } from '../../repositories/contractorRepository';
+import * as database from '../../config/database';
 
-// Mock Firestore
-jest.mock('../../config/firestore', () => ({
-  db: {
-    collection: jest.fn(() => ({
-      where: jest.fn(() => ({
-        limit: jest.fn(() => ({
-          get: jest.fn()
-        }))
-      })),
-      doc: jest.fn(() => ({
-        get: jest.fn(),
-        set: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn()
-      })),
-      add: jest.fn(),
-      orderBy: jest.fn(() => ({
-        limit: jest.fn(() => ({
-          get: jest.fn()
-        })),
-        get: jest.fn()
-      }))
-    })),
-    settings: jest.fn()
-  },
-  Collections: {
-    USERS: 'users',
-    PROJECTS: 'projects',
-    CONTRACTOR_PROFILES: 'contractorProfiles',
-    SUBMISSIONS: 'submissions'
+jest.mock('../../repositories/userRepository', () => ({
+  __esModule: true,
+  default: {
+    findByEmail: jest.fn(),
+    findById: jest.fn(),
+    updateLastLogin: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updatePassword: jest.fn(),
   }
 }));
+
+jest.mock('../../repositories/projectRepository', () => ({
+  projectRepository: {
+    listWithFilters: jest.fn(),
+    findById: jest.fn(),
+    getMilestones: jest.fn(),
+    getRecentSubmissions: jest.fn(),
+    getContractorSummary: jest.fn(),
+    create: jest.fn(),
+  }
+}));
+
+jest.mock('../../repositories/contractorRepository', () => ({
+  contractorRepository: {
+    findById: jest.fn(),
+  }
+}));
+
+jest.mock('../../config/database', () => ({
+  query: jest.fn(),
+  rowToCamelCase: (row: any) => row,
+}));
+
+const mockedUserRepo = userRepository as jest.Mocked<typeof userRepository>;
+const mockedProjectRepo = projectRepository as jest.Mocked<typeof projectRepository>;
+const mockedContractorRepo = contractorRepository as jest.Mocked<typeof contractorRepository>;
+const queryMock = database.query as jest.Mock;
 
 describe('API Integration Tests', () => {
   let authToken: string;
@@ -57,26 +66,9 @@ describe('API Integration Tests', () => {
       updatedAt: new Date()
     };
 
-    // Mock user query
-    (db.collection as jest.Mock).mockReturnValue({
-      where: jest.fn().mockReturnValue({
-        limit: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            empty: false,
-            docs: [{
-              data: () => mockUser
-            }]
-          })
-        })
-      }),
-      doc: jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValue({
-          exists: true,
-          data: () => mockUser
-        }),
-        update: jest.fn().mockResolvedValue({})
-      })
-    });
+    mockedUserRepo.findByEmail.mockResolvedValue(mockUser as any);
+    mockedUserRepo.findById.mockResolvedValue(mockUser as any);
+    mockedUserRepo.updateLastLogin.mockResolvedValue(undefined as any);
 
     // Login to get token
     const loginResponse = await request(app)
@@ -120,52 +112,27 @@ describe('API Integration Tests', () => {
 
   describe('Projects API', () => {
     beforeEach(() => {
-      // Mock projects collection
-      (db.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue({
-              empty: false,
-              docs: [{
-                data: () => ({
-                  id: 'project-123',
-                  name: 'Test Project',
-                  description: 'Test Description',
-                  category: 'TRANSPORTATION',
-                  lga: 'Aba North',
-                  status: 'IN_PROGRESS',
-                  progress: 50,
-                  budget: 1000000,
-                  isPublic: true,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                })
-              }]
-            })
-          })
-        }),
-        doc: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            exists: true,
-            data: () => ({
-              id: 'project-123',
-              name: 'Test Project',
-              description: 'Test Description',
-              category: 'TRANSPORTATION',
-              lga: 'Aba North',
-              status: 'IN_PROGRESS',
-              progress: 50,
-              budget: 1000000,
-              isPublic: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            })
-          }),
-          set: jest.fn().mockResolvedValue({}),
-          update: jest.fn().mockResolvedValue({}),
-          delete: jest.fn().mockResolvedValue({})
-        })
-      });
+      const project = {
+        id: 'project-123',
+        name: 'Test Project',
+        description: 'Test Description',
+        category: 'TRANSPORTATION',
+        lga: ['Aba North'],
+        status: 'IN_PROGRESS',
+        progress: 50,
+        budget: 1000000,
+        isPublic: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        contractorId: 'contractor-1',
+      } as any;
+
+      mockedProjectRepo.listWithFilters.mockResolvedValue({ projects: [project], total: 1 } as any);
+      mockedProjectRepo.findById.mockResolvedValue(project);
+      mockedProjectRepo.getMilestones.mockResolvedValue([] as any);
+      mockedProjectRepo.getRecentSubmissions.mockResolvedValue([] as any);
+      mockedProjectRepo.create.mockResolvedValue(project);
+      mockedContractorRepo.findById.mockResolvedValue({ id: 'contractor-1', companyName: 'Contractor', rating: 4 } as any);
     });
 
     it('should get projects list', async () => {
@@ -211,49 +178,43 @@ describe('API Integration Tests', () => {
 
   describe('Public API', () => {
     beforeEach(() => {
-      // Mock public projects
-      (db.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue({
-              empty: false,
-              docs: [{
-                data: () => ({
-                  id: 'public-project-123',
-                  name: 'Public Test Project',
-                  description: 'Public Test Description',
-                  category: 'EDUCATION',
-                  lga: 'Aba South',
-                  status: 'IN_PROGRESS',
-                  progress: 75,
-                  budget: 1500000,
-                  isPublic: true,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                })
-              }]
-            })
-          })
-        }),
-        doc: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            exists: true,
-            data: () => ({
-              id: 'public-project-123',
-              name: 'Public Test Project',
-              description: 'Public Test Description',
-              category: 'EDUCATION',
-              lga: 'Aba South',
-              status: 'IN_PROGRESS',
-              progress: 75,
-              budget: 1500000,
-              isPublic: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            })
-          })
-        })
-      });
+      const publicProject = {
+        id: 'public-project-123',
+        name: 'Public Test Project',
+        description: 'Public Test Description',
+        category: 'EDUCATION',
+        lga: ['Aba South'],
+        status: 'IN_PROGRESS',
+        progress: 75,
+        budget: 1500000,
+        isPublic: true,
+        contractorId: 'contractor-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any;
+
+      mockedProjectRepo.findById.mockResolvedValue(publicProject);
+      mockedProjectRepo.getMilestones.mockResolvedValue([] as any);
+      mockedProjectRepo.getContractorSummary.mockResolvedValue({
+        id: 'contractor-1',
+        companyName: 'Public Contractor',
+        rating: 4,
+      } as any);
+
+      queryMock.mockResolvedValueOnce({ rows: [{
+        id: 'public-project-123',
+        name: 'Public Test Project',
+        description: 'Public Test Description',
+        category: 'EDUCATION',
+        lga: ['Aba South'],
+        status: 'IN_PROGRESS',
+        progress: 75,
+        budget: 1500000,
+        is_public: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }], rowCount: 1 });
+      queryMock.mockResolvedValue({ rows: [], rowCount: 0 });
     });
 
     it('should get public projects without authentication', async () => {
